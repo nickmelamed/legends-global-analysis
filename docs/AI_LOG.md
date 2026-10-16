@@ -1,8 +1,9 @@
 # AI log
 
 Factual entries, one per phase. What Nick asked, what Claude produced, what
-Nick or the reviewers changed or rejected, and the time. Times come from
-Nick's timer. Claude's clock times are in brackets for reference.
+Nick or the reviewers changed or rejected, and the time. Times are active
+minutes from docs/TIME_LOG.md, which `scripts/timer.py` writes when Nick says
+start time or pause time.
 
 ## Setup (started [21:13 PDT, 2026-10-15])
 
@@ -17,6 +18,8 @@ docs/DECISIONS.md (D-001, D-002), PROGRESS.md, the Makefile, `.gitignore`,
 repo skills (`reload-and-reconcile`, `run-evals`), then ran the installer and
 the smoke test.
 
-Changed or rejected: TBD after Nick's review.
+Changed or rejected: Nick asked for the timer to be tracked by Claude
+instead of by hand. Added `scripts/timer.py` and docs/TIME_LOG.md.
 
-Time at checkpoint: TBD (Nick's timer).
+Time at checkpoint: setup was done before the timer started and is not
+counted.

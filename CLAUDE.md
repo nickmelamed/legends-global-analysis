@@ -80,6 +80,10 @@ docker compose up # load, then api and web
 
 ## How to work here
 
+- When Nick says "start time" or "pause time", run
+  `python3 scripts/timer.py start` or `pause` and show the output. At each
+  phase end run `python3 scripts/timer.py mark "end of Phase N"` and put the
+  active minutes in the AI log entry.
 - Phases end with `/finish-phase`, then stop and show evidence (commands and
   output). Nick reads every diff. Do not start the next phase unprompted.
 - Append a factual entry to docs/AI_LOG.md at the end of each phase,
