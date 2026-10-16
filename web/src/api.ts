@@ -38,6 +38,7 @@ export interface WindowInfo {
   comparison_end: string | null;
   comparison_elapsed_end: string | null;
   crosses_cutover: boolean;
+  cutover_date: string;
 }
 
 export interface Overview {

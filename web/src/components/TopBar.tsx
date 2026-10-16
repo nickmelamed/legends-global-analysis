@@ -24,7 +24,7 @@ export function TopBar({ theme, onToggleTheme, userName, onMenu }: Props) {
       />
       <span className="app-name">Attractions</span>
       <span className="spacer" />
-      <Link to={{ pathname: "/support", search }} className="btn">
+      <Link to={{ pathname: "/support", search }} className="btn" aria-label="Help & Support">
         ? <span className="help-label">Help &amp; Support</span>
       </Link>
       <button onClick={onToggleTheme} aria-label="Toggle light and dark mode">

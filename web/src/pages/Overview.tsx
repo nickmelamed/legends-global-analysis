@@ -48,9 +48,9 @@ export function Overview({ theme }: { theme: Theme }) {
         )}
       </div>
       {w.crosses_cutover && (
-        <div className="notice">
-          ! The comparison crosses the 2026-02-03 ticketing system cutover, so ticket figures
-          on each side come from different systems.
+        <div className="notice" data-testid="cutover">
+          ! The comparison crosses the {formatDate(w.cutover_date)} ticketing system cutover, so
+          ticket figures on each side come from different systems.
         </div>
       )}
       {o.data_gaps.length > 0 && (

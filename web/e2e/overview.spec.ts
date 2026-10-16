@@ -74,6 +74,49 @@ test("an out-of-scope venue shows the access message", async ({ page }) => {
   await expect(page.getByTestId("freshness")).toContainText("do not have access");
 });
 
+test("the trend switches grain through the API", async ({ page }) => {
+  await page.goto("/overview");
+  await expect(page.getByTestId("trend-chart")).toBeVisible();
+  const request = page.waitForRequest(/\/api\/trend\?.*grain=week/);
+  await page.getByRole("button", { name: "Week", exact: true }).click();
+  await request;
+  await expect(page.getByRole("button", { name: "Week", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByTestId("trend-chart")).toBeVisible();
+});
+
+test("ticket filters tag only the ticket metrics", async ({ page }) => {
+  await page.goto("/overview");
+  await page.getByLabel("INDIVIDUAL").check();
+  await expect(page.getByTestId("tile-attendance")).toContainText("Ticket filters applied");
+  await expect(page.getByTestId("tile-ticket_revenue")).toContainText("Ticket filters applied");
+  await expect(page.getByTestId("tile-total_revenue")).not.toContainText("Ticket filters applied");
+  await expect(page.getByTestId("tile-payroll")).not.toContainText("Ticket filters applied");
+});
+
+test("the logo is the black file on light and the white file on dark", async ({ page }) => {
+  await page.goto("/overview");
+  const logo = page.getByRole("img", { name: "Legends Global" });
+  await expect(logo).toHaveAttribute("src", /logo-horizontal-black\.png/);
+  await page.getByRole("button", { name: "Toggle light and dark mode" }).click();
+  await expect(logo).toHaveAttribute("src", /logo-horizontal-white\.png/);
+});
+
+test("the cutover note takes its date from the API", async ({ page }) => {
+  await page.goto("/overview?preset=year_to_date&compare_mode=last_year");
+  await expect(page.getByTestId("cutover")).toContainText("Feb 3, 2026");
+});
+
+test("the phone drawer closes on Escape", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/overview");
+  await expect(page.getByRole("link", { name: "Help & Support" })).toBeVisible();
+  await page.getByRole("button", { name: "Open menu" }).click();
+  const sidebar = page.getByRole("complementary", { name: "Navigation and filters" });
+  await expect(sidebar).toHaveClass(/open/);
+  await page.keyboard.press("Escape");
+  await expect(sidebar).not.toHaveClass(/open/);
+});
+
 for (const width of [390, 1440]) {
   for (const theme of ["light", "dark"]) {
     test(`layout ${width} ${theme}`, async ({ page }) => {

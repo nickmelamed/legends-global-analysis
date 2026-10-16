@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import type { Filters, Freshness } from "./api";
 import { FreshnessFooter } from "./components/FreshnessFooter";
@@ -18,6 +18,12 @@ export function App() {
   const options = useApi<Filters>(`/api/filters?${query}`);
   const fresh = useApi<Freshness>(`/api/freshness?${query}`);
   const opts = options.state === "ok" ? options.data : null;
+  useEffect(() => {
+    if (!drawer) return;
+    const close = (e: KeyboardEvent) => e.key === "Escape" && setDrawer(false);
+    window.addEventListener("keydown", close);
+    return () => window.removeEventListener("keydown", close);
+  }, [drawer]);
   return (
     <div className="app">
       <TopBar
