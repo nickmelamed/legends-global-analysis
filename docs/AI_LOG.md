@@ -57,3 +57,42 @@ errors in `scripts/agent/` (protected) and `scripts/timer.py`. Typecheck and
 tests cannot run before Phase 2.
 
 Time: 20.7 active minutes against a 25 minute budget.
+
+## Phase 2: rules, load and reconciliation (2026-10-16 05:47 to 06:07)
+
+Asked: start the timer and plan Phase 2. Nick approved the plan, including
+creating `pyproject.toml` and `tests/fixtures/pbi_targets.json` and editing
+`.claude/gate-commands`.
+
+Produced: `pipeline/rules.py`, `pipeline/load.py`, `pipeline/reconcile.py`,
+98 tests, docs/RECONCILIATION.md, docs/DATA_ISSUES.md and D-009. Summit
+matches all eight targets. Riverbend total revenue is $1 off because Power
+BI adds rounded components (R-001). Every other target matches. Two loads
+give byte-identical rollups in about 4 seconds.
+
+Changed or rejected: the rule tests were written first and shown failing,
+but the load tests were written after `load.py`. POS revenue moved to
+integer cents before its tests first passed, and one muddled property-test
+assertion was removed at the same point. The spec reviewer found three real
+bugs. Department-days where every shift lacked a rate stored $0 payroll
+instead of null (67 rows, none in the week). Week hours were rounded twice,
+which could turn a miss into a match. And Claude had tagged its own derived
+figures in R-004 with the `numbers: ok` marker meant for Power BI display
+figures, so `make numbers` passed on numbers with no generated source. All
+three were fixed with a failing test or a generated figure first. It also
+asked for the ticket business-date rule to be a tested function, for
+`record_type` to be validated, and for a blocking check that duplicate
+ticket loads agree. Those were done too. Generating the R-004 figures showed
+that DATA_PROFILE.md's 484.90 shift-rounded hours came from pandas rounding
+binary floats. DuckDB gives 485.00 (half to even) and 485.40 (half up). All
+three still display 3.81, so the conclusion stands. The style reviewer
+removed section-banner comments and a few colons.
+
+What went wrong: the numbers-marker misuse above, and a blanket string
+rename in `rules.py` that mangled two names (caught by ruff). `make ci`
+still fails at typecheck because `web/` does not exist. `make numbers`
+fails because docs/WRITEUP.md does not exist yet. The check passes when run
+on docs/RECONCILIATION.md alone.
+
+Time: 19.8 active minutes against a 50 minute budget.
+

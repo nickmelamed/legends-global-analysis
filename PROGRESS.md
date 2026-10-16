@@ -8,14 +8,14 @@ after compaction.
 
 - [x] Setup: repo-standards mode A, hooks, rules, reviewer agents, repo skills
 - [x] Phase 1: profile the data, hypothesis table (about 25 min). Stop after.
+- [x] Phase 2: rules.py with tests, load, reconciliation (about 50 min)
+- [x] Phase 2: write the Ancillary visual gap (D-008) and the RTL $1 rounding
+  gap into docs/RECONCILIATION.md
 
 ## Next
 
-- [ ] Phase 2: rules.py with tests, load, reconciliation (about 50 min)
-- [ ] Phase 2: write the Ancillary visual gap (D-008) and the RTL $1 rounding
-  gap into docs/RECONCILIATION.md
-- [ ] Switch `.claude/gate-commands` to `make agent-check` once tools exist
-- [ ] Add `make numbers` to the gate once `build/reports` exists
+- [ ] Switch `.claude/gate-commands` to `make agent-check` once `web/` exists
+- [ ] Add `make numbers` to the gate once docs/WRITEUP.md exists
 - [ ] Enable the project-checks step in `.github/workflows/agent-checks.yml`
 - [ ] Phase 3: API with scope helper and restricted-user tests (about 20 min)
 - [ ] Phase 4: Overview page, screenshots at 390 and 1440, light and dark (about 40 min)
