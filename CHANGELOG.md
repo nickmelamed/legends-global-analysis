@@ -33,7 +33,10 @@ Keep a Changelog, and versions follow Semantic Versioning.
   and a slow test checks the overview against the Power BI targets.
 - Decisions D-010 (ticket filters), D-011 (date presets end yesterday) and
   D-012 (no delta or pace colour over missing data).
-- fastapi and uvicorn dependencies, with httpx declared for the test client.
+- fastapi and uvicorn dependencies, with httpx2 for the test client.
+- Custom ranges are capped at 731 days. The export header shows days
+  elapsed, the comparison's elapsed end and whether a window crosses the
+  cutover.
 
 ### Changed
 

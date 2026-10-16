@@ -141,3 +141,13 @@ wall-clock time and APP_TODAY is simulated, so comparing them means nothing.
 Staleness is the latest data day per venue and feed against APP_TODAY − 1.
 
 Time: 16.3 active minutes against a 20 minute budget.
+
+Follow-up after review (same day): Nick asked for the items left open.
+- The test client now uses httpx2, which Starlette 1.8 prefers. The
+  deprecation warning is gone.
+- Custom ranges over 731 days are a 422. Two years holds all the data and a
+  year-on-year view.
+- The export header carries days elapsed, the comparison's elapsed end and
+  `crosses_cutover`. A test also caught a future window printing "compared
+  through None", which was fixed.
+- An `api-smoke` skill was drafted for Nick to approve. It is not installed.
