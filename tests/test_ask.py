@@ -100,6 +100,7 @@ def test_invented_figure_falls_back_to_the_table(make_client):
     assert body["answer"] is None and body["grounded"] is False
     assert body["ungrounded"] == ["$3,500", "12%"]
     assert "not in the data" in body["fallback"]
+    assert body["notice"].startswith("The answer had figures that could not be")
     assert {r["metric"] for r in body["table"]} >= {"Total revenue", "Attendance"}
 
 
@@ -107,7 +108,10 @@ def test_model_outage_falls_back_to_last_week_table(make_client):
     body = ask(make_client, FakeClient(LLMError("model unreachable"))).json()
     assert body["answer"] is None
     assert body["fallback"].startswith("model unreachable")
-    assert "last week against last year" in body["fallback"]
+    assert body["notice"] == (
+        "The assistant could not answer, so here are the numbers. "
+        "These are for last week against last year."
+    )
     rows = {r["metric"]: r for r in body["table"]}
     assert rows["Attendance"]["start"] == "2026-09-28"
     assert rows["Attendance"]["current"] == 70

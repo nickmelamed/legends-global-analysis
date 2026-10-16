@@ -67,7 +67,7 @@ export function Ask() {
               </p>
             </>
           ) : (
-            <p data-testid="check">Showing the numbers only: {reply.fallback}</p>
+            <p data-testid="check">{reply.notice}</p>
           )}
           {reply.table.length > 0 && (
             <table className="data" data-testid="ask-table">

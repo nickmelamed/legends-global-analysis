@@ -109,6 +109,7 @@ export interface AskReply {
   answer: string | null;
   grounded: boolean;
   fallback: string | null;
+  notice: string | null;
   ungrounded: string[];
   tool_calls: { name: string; args: Record<string, unknown> }[];
   table: AskRow[];

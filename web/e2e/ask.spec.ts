@@ -22,7 +22,9 @@ test("an unanswerable question shows the numbers only", async ({ page }) => {
   await page.getByLabel("Question").fill("Something nobody recorded?");
   await page.getByRole("button", { name: "Ask" }).click();
   await expect(page.getByTestId("answer")).toHaveCount(0);
-  await expect(page.getByTestId("check")).toContainText("Showing the numbers only");
+  await expect(page.getByTestId("check")).toHaveText(
+    "The assistant could not answer, so here are the numbers. These are for last week against last year.",
+  );
   await expect(page.getByTestId("ask-table")).toContainText("Total revenue");
 });
 
