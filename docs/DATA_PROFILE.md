@@ -88,7 +88,9 @@ Other findings (hypothesis 11):
 - The budget has no Bar department, and `budget_attendance` is set only on
   Ticket rows.
 - Weather ends 2026-10-04, so the cache has no forward days.
-- `booking_definite_date` runs to 2026-10-17, after APP_TODAY.
+- `booking_definite_date` runs to 2026-10-17, after APP_TODAY. Two Definite
+  bookings (one RTL, one TRO, events in November) are affected. No KPI uses
+  this column, so the cause is left unexplained.
 - `pay_period_flag = Current` marks exactly the reconciliation week.
 - Unscheduled shifts are 5.0 h on the clock and 4.5 h paid, an undocumented
   deduction.

@@ -144,3 +144,23 @@ keep the channel chart as Power BI shows it.
 
 Consequences. The channel chart does not sum to ticket revenue. The chart
 gets a note saying Affiliate is excluded and by how much.
+
+## D-008: Show correct F&B, document the Ancillary visual's gap (2026-10-16)
+
+Context. The Power BI Ancillary visual shows Summit's Restaurant at $4.5K,
+which is Restaurant minus Bar (4,533.26). Bar is then shown again on its own,
+so the visual's F&B is 7,979.40 against the 9,230 target. The headline
+$14.9K, the $8.08 per cap and the +24.6% vs prior all fit the same double
+subtraction.
+
+Decision. The app shows F&B as Restaurant + Bar + Cafe (9,230.42 for
+Summit) and does not copy the visual. The $1,251.02 gap and the rows behind
+it go in docs/RECONCILIATION.md.
+
+Why. The packet defines F&B as Restaurant, Bar and Cafe, and asks
+candidates to say so when a Power BI number is wrong. The 9,230 target
+itself uses the full sum.
+
+Consequences. Anyone comparing the app with the old Ancillary page will
+see Restaurant and ancillary totals $1,251.02 higher at Summit for the week.
+The reconciliation doc has to explain this before users see it.

@@ -12,6 +12,8 @@ after compaction.
 ## Next
 
 - [ ] Phase 2: rules.py with tests, load, reconciliation (about 50 min)
+- [ ] Phase 2: write the Ancillary visual gap (D-008) and the RTL $1 rounding
+  gap into docs/RECONCILIATION.md
 - [ ] Switch `.claude/gate-commands` to `make agent-check` once tools exist
 - [ ] Add `make numbers` to the gate once `build/reports` exists
 - [ ] Enable the project-checks step in `.github/workflows/agent-checks.yml`
@@ -27,7 +29,10 @@ no-shows and the RTL 2026-05-09 Free Admission Day count as attendance
 (D-004). RTL 2026-04-18 is a missing feed (D-005). Cover shifts count and
 the 0.5 h deduction stands. Payroll with missing rates is marked incomplete
 (D-006). Bar gaps are closures and Affiliate stays off the channel chart
-(D-007). Productivity shows 3.82. Power BI's 3.81 is likely per-shift rounding of hours (see DATA_PROFILE.md).
+(D-007). Productivity shows 3.82. Power BI's 3.81 is likely per-shift rounding of hours (see DATA_PROFILE.md). F&B
+stays Restaurant + Bar + Cafe and the Ancillary visual's gap is documented
+(D-008). Two bookings confirmed after 2026-10-05 stay unexplained, with no
+KPI impact.
 
 ## Open questions for the owner
 
@@ -35,15 +40,3 @@ the 0.5 h deduction stands. Payroll with missing rates is marked incomplete
   README telling reviewers to copy them in? (Nick is asking the hiring
   manager.)
 
-From the Phase 1 profile (docs/DATA_PROFILE.md). Where Power BI already
-answers a question, the profile follows Power BI until the owner says
-otherwise.
-
-- The Power BI Ancillary visual subtracts Bar twice, so its F&B is $7,979
-  against the 9,230 target. Nick asked to reproduce the visual as is. That
-  conflicts with the packet ("If you believe the Power BI number is wrong,
-  say so and show why", and F&B is Restaurant, Bar and Cafe) and with D-003.
-  The recommendation is to keep correct F&B and record the gap in
-  docs/RECONCILIATION.md. Waiting on Nick.
-- Some `booking_definite_date` values fall after 2026-10-05. Was the CRM
-  export taken later than the other feeds?
