@@ -50,6 +50,14 @@ Keep a Changelog, and versions follow Semantic Versioning.
   findings), and docs/BACKLOG.md.
 - The window in API responses carries `cutover_date`. The phone drawer
   closes on Escape, and the Help link has an accessible name.
+- Ask the data: `POST /api/ask` with four scoped tools over the Overview
+  code, a check that every figure in a reply is in the tool outputs, and a
+  plain table when the check fails or the model is unavailable. Replies
+  replay `evals/recordings/` unless `ASK_CLIENT=anthropic`.
+- An Ask the data page with the answer and the figures it used.
+- `evals/cases.yaml` with seven cases and `make evals` (`RECORD=1` to call
+  the model), which writes build/reports/evals.md with cost per question.
+- Decisions D-015 (how answers are checked) and D-016 (model and recordings).
 
 ### Changed
 
@@ -57,3 +65,5 @@ Keep a Changelog, and versions follow Semantic Versioning.
   check.
 
 ### Fixed
+
+- Escape on the phone drawer returns focus to the menu button.

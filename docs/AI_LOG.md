@@ -214,3 +214,63 @@ Follow-up after review (same day): Nick asked for the items left open.
 - The follow-up review could not find Nick's approval in the repo for
   switching `.claude/gate-commands` to `make agent-check` (ee9a629). On
   2026-10-16 Nick confirmed it ("fix everything" on the open review items).
+
+## Phase 5: Ask the data (2026-10-16 14:47 to 15:15)
+
+Asked: process the Phase 4 follow-up reviews, start the timer, plan Phase 5.
+The reviewer output from before `/clear` was lost, so both reviewers were
+run again on the follow-up commits. Neither found anything that must be
+fixed. In plan mode Nick chose live recordings made once with his key,
+Opus 5.5 and a minimal Ask page. Approving the plan approved `anthropic`,
+`pyyaml`, the Makefile flag and `evals/cases.yaml`.
+
+Produced: `POST /api/ask` (api/ask.py, ask_tools.py, llm.py, grounding.py),
+seven eval cases with expected figures from the API, `make evals` with
+`RECORD=1`, an Ask page with three e2e tests, D-015 and D-016. Expected
+values were recomputed by the spec reviewer and all match.
+
+Changed or rejected:
+- The installed SDK has no server-side refusal fallback, so a refusal goes
+  to the table fallback.
+- The scope tests called every route with GET, so the new POST route got
+  405. They now use each route's method. The reviewer confirmed this is not
+  a weakening.
+- The e2e tests use a hand-written fixture recording, marked as such. The
+  screenshot docs/screenshots/ask-1440-light.png shows that fixture, not
+  model output.
+- The plan said case 7 passes with no model call. It needs the model.
+- Rewording three unpushed commit subjects was blocked by the history guard
+  and left as is. `0fae0a7` is pushed and also left as is.
+
+The spec reviewer found seven problems, all fixed with failing tests first:
+- `change` was computed over missing days, where the Overview gives no
+  delta (Rule 4). It now follows the Overview's percent change.
+- `allow_fallback` let a missing recording pass the injection case.
+- The grader matched "4" for 3.82 and "8 days" for -8.23.
+- Month names were matched by prefix, so "declined 8.2%" was rejected and
+  "Separately 28" hid a number.
+- ".5%", "+8.23%" for a fall, and number words passed the check.
+- With no key, the Anthropic client raised TypeError and the route gave 500.
+- The page said "Checked against the data", but the check matches values,
+  not metrics. "Attendance was 91,891" passes when 91,891 is the comparison
+  revenue. The page and D-015 now say so.
+
+The style reviewer's rewrites were applied. The fallback now shows a plain
+notice instead of internal reasons such as an HTTP status.
+
+Phase 4 items Nick asked for: the cutover test now swaps the API date with
+`page.route`, and Escape returns focus to the menu button (the first
+version of that test passed only because focus never left the button).
+`mutation-check` on the grain, tag, logo and cutover tests: five mutations,
+five caught, files restored. Before review, four mutations of the Ask code
+(grounding skipped, venue pre-check removed, gap flag dropped, no outage
+table) were each caught.
+
+What went wrong: the first grounding version passed its own tests while
+letting through signed and leading-dot figures and rejecting the most
+likely phrasing of case 1 ("declined 8.2%"). Those tests were written after
+the code, and only the reviewer's adversarial replies exposed it. No live
+answer has been recorded yet, so the eval shows 1 of 7.
+
+Time: 27.3 active minutes against a 40 minute budget, including the
+Phase 4 follow-ups.

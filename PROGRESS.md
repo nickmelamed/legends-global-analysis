@@ -14,12 +14,14 @@ after compaction.
 - [x] Phase 3: API with scope helper and restricted-user tests (budget 20 min)
 - [x] Phase 4: Overview page, screenshots at 390 and 1440, light and dark (budget 40 min)
 - [x] Switch `.claude/gate-commands` to `make agent-check`
+- [x] Phase 5: Ask the data, grounding check, evals (budget 40 min)
+- [ ] Nick: `make evals RECORD=1` to record live answers, then Claude
+  checks the recordings for PII, commits them and re-runs `make evals`
 
 ## Next
 
 - [ ] Add `make numbers` to the gate once docs/WRITEUP.md exists
 - [ ] Enable the project-checks step in `.github/workflows/agent-checks.yml`
-- [ ] Phase 5: Ask the data, grounding check, evals (about 40 min)
 - [ ] Phase 6: draft docs for Nick to rewrite
 
 ## Done
