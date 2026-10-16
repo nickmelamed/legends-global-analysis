@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "attractions"
+version = "0.1.0"
+description = "Attractions revenue operations: load, rules and reconciliation."
+requires-python = ">=3.12"
+dependencies = [
+    "pandas>=2.2",
+    "duckdb>=1.1",
+    "python-calamine>=0.3",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "hypothesis>=6",
+    "ruff>=0.6",
+]
+
+[tool.setuptools.packages.find]
+include = ["pipeline*"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+extend-exclude = ["scripts/agent", "scripts/profile"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "D"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["D"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["slow: needs data/ or takes more than a few seconds"]

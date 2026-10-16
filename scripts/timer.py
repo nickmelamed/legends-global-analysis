@@ -59,6 +59,7 @@ def active_minutes(events, now):
 
 
 def main(argv):
+    """Run one timer command and return the exit code."""
     if not argv or argv[0] not in {"start", "pause", "mark", "status"}:
         print(__doc__)
         return 2
@@ -69,7 +70,8 @@ def main(argv):
 
     if kind == "status":
         state = "running" if running else "paused"
-        print(f"{state}, {total:.1f} of {BUDGET_MIN} min used, {BUDGET_MIN - total:.1f} left")
+        left = BUDGET_MIN - total
+        print(f"{state}, {total:.1f} of {BUDGET_MIN} min used, {left:.1f} left")
         return 0
     if kind == "start" and running:
         print(f"already running, {total:.1f} min used. Nothing logged.")
