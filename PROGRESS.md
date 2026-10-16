@@ -15,14 +15,16 @@ after compaction.
 - [x] Phase 4: Overview page, screenshots at 390 and 1440, light and dark (budget 40 min)
 - [x] Switch `.claude/gate-commands` to `make agent-check`
 - [x] Phase 5: Ask the data, grounding check, evals (budget 40 min)
-- [ ] Nick: `make evals RECORD=1` to record live answers, then Claude
+- [x] Nick: `make evals RECORD=1` to record live answers, then Claude
   checks the recordings for PII, commits them and re-runs `make evals`
+- [x] Phase 6: docker compose, README, BACKLOG and WRITEUP drafts
+- [ ] Nick: commit the Makefile and CI changes (the auto-mode classifier
+  blocked the agent's commit), then rewrite BACKLOG and WRITEUP
 
 ## Next
 
-- [ ] Add `make numbers` to the gate once docs/WRITEUP.md exists
-- [ ] Enable the project-checks step in `.github/workflows/agent-checks.yml`
-- [ ] Phase 6: draft docs for Nick to rewrite
+- [ ] Push and confirm the project-checks step passes on GitHub Actions
+- [ ] Cut BACKLOG to one page and WRITEUP to three
 
 ## Done
 

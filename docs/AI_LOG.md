@@ -294,3 +294,43 @@ answer and now shows model output, not the e2e fixture.
 Nick kept `missing_day` failing as an example of an eval that is too
 strict, for the write-up. The Ask table now has plan and percent-of-plan
 columns, since answers quote "90.51% of plan" and the table did not show it.
+
+## Phase 6: docs, README and docker compose (2026-10-16 15:25 to 15:36)
+
+Asked: plan Phase 6, then build docker compose, the README, and drafts of
+BACKLOG (Part B) and WRITEUP (Part D) for Nick to rewrite. Nick approved
+adding `make numbers` to agent-check, enabling the CI project-checks step
+and the Docker base images, and asked Claude to write the AI reflection.
+
+Produced: `docker-compose.yml` with a one-shot `load`, then `api`, then
+`web` (Vite build behind nginx). A cold build took 80 seconds and the app
+served 6 seconds after `up`. Through nginx, Summit's week gave total revenue
+84,328.25 and ticket revenue 61,575.71, and marcus@dev got a 403 on
+Riverbend. The README, the backlog draft and the write-up draft, with
+`make numbers` passing. The old deferred-work list in BACKLOG.md moved to
+the write-up's last section. `make ci` on a clean worktree with no data/
+gave 284 passed and 1 skipped (the database test).
+
+Changed or rejected: the packet's Part D asks for an AI log and
+reflection, which SPEC section 6 left out, so it was added. The first
+README listed the data files by a guessed name pattern. It was corrected
+from `ls data`. The backlog draft first claimed an overtime flag "would
+have caught last summer's week", which nothing in the data shows, and was
+softened. The style reviewer found more overclaims ("read every diff",
+"cannot drift apart", "a prompt injection cannot widen access"), triads,
+"not X, but Y" framing and misplaced paragraphs. All were applied except
+"a 403, never an empty result", which is the spec's own wording.
+
+What went wrong: the first commit of the docker files was blocked by the
+guard hook because the message contained the string ".env". The auto-mode
+classifier blocked the commit of the Makefile and CI changes, so those are
+left for Nick. `make setup` cannot run in CI because it calls
+`pre-commit install` and pre-commit is not a declared dependency, so the CI
+step installs the dependencies directly. That step has not run on GitHub
+yet. Both drafts are longer than the packet asks (BACKLOG about 970 words
+against one page, WRITEUP about 2,100 words against two to three pages).
+Claude did not add `DEV_USER` passthrough to compose, so switching user
+under Docker means editing `.env`.
+
+Time: 10.9 active minutes by the timer (134.0 to 144.9). No budget was set
+for this phase.
