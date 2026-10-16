@@ -334,3 +334,14 @@ under Docker means editing `.env`.
 
 Time: 10.9 active minutes by the timer (134.0 to 144.9). No budget was set
 for this phase.
+
+Follow-up at /finish-phase (same day): Nick committed the Makefile and CI
+changes (142d90b). The spec reviewer found that the no-Docker README path
+gave 401 on every page, since uvicorn did not read `DEV_USER`, and it now
+passes `--env-file`. It also found that the README oversold Ask with no key
+(only the recorded questions replay), that the write-up said CI enforced
+the reconciliation when the real-data test always skips there, that
+`data_quality` keeps only the latest successful load, not every run, and
+that the overtime flag needs per-person data the database leaves out
+(D-009). All were corrected in the docs. The `missing_day` line no longer
+reads as a planned edit to cases.yaml.

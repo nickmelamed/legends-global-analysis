@@ -18,8 +18,8 @@ after compaction.
 - [x] Nick: `make evals RECORD=1` to record live answers, then Claude
   checks the recordings for PII, commits them and re-runs `make evals`
 - [x] Phase 6: docker compose, README, BACKLOG and WRITEUP drafts
-- [ ] Nick: commit the Makefile and CI changes (the auto-mode classifier
-  blocked the agent's commit), then rewrite BACKLOG and WRITEUP
+- [x] Nick: commit the Makefile and CI changes (142d90b)
+- [ ] Nick: rewrite BACKLOG and WRITEUP
 
 ## Next
 
