@@ -76,3 +76,18 @@ def test_ratio_is_none_over_missing_or_zero(num, den, expected):
 )
 def test_pace_status_thresholds(pct, status):
     assert rules.pace_status(pct) == status
+
+
+@pytest.mark.parametrize(
+    ("current", "comparison", "expected"),
+    [
+        (110, 100, 10.0),
+        (90, 100, -10.0),
+        (5, 0, None),
+        (None, 100, None),
+        (5, None, None),
+    ],
+)
+def test_pct_change_is_none_without_a_comparison(current, comparison, expected):
+    result = rules.pct_change(current, comparison)
+    assert result == pytest.approx(expected) if expected is not None else result is None

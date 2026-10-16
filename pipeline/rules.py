@@ -397,6 +397,14 @@ def ratio(numerator: float | None, denominator: float | None) -> float | None:
     return numerator / denominator
 
 
+def pct_change(current: float | None, comparison: float | None) -> float | None:
+    """Return the percent change from ``comparison`` to ``current``."""
+    if current is None:
+        return None
+    change = ratio(current - (comparison or 0), comparison)
+    return None if change is None else change * 100
+
+
 PACE_GREEN_PCT = 100.0
 PACE_AMBER_PCT = 90.0
 
