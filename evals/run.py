@@ -21,6 +21,7 @@ from pathlib import Path
 import yaml
 from fastapi.testclient import TestClient
 
+from api.ask import UNGROUNDED
 from api.grounding import figure_ok, figures
 from api.llm import AnthropicClient, RecordingClient
 from api.main import create_app
@@ -53,6 +54,17 @@ class Outcome:
         return not self.failures
 
 
+def shows(token: str, value: float) -> bool:
+    """Return whether ``token`` states ``value`` precisely enough to count.
+
+    Amounts of 100 or more may be whole numbers. Smaller values with decimals
+    need at least one, so "4" never counts as 3.82 and "8" never as -8.23.
+    """
+    whole = abs(value) >= 100 or float(value).is_integer()
+    places = len(token.rstrip("%").split(".")[1]) if "." in token else 0
+    return (whole or places >= 1) and figure_ok(token, [value])
+
+
 def grade(case: dict, status: int, body: dict) -> list[str]:
     """Return what the response got wrong for ``case``, or nothing."""
     exp = case["expect"]
@@ -64,14 +76,17 @@ def grade(case: dict, status: int, body: dict) -> list[str]:
     if body["model_called"] != exp["model_called"]:
         fails.append(f"model_called is {body['model_called']}")
     answer = body["answer"] or ""
-    if body["fallback"] and not exp.get("allow_fallback"):
+    # Only a reply the grounding check stopped may fall back. A missing
+    # recording or an outage says nothing about how the model behaves.
+    allowed = exp.get("allow_fallback") and body["fallback"] == UNGROUNDED
+    if body["fallback"] and not allowed:
         fails.append(f"fell back: {body['fallback']}")
     found = figures(answer)
     for value in exp.get("figures", []):
-        if not any(figure_ok(t, [value]) for t in found):
+        if not any(shows(t, value) for t in found):
             fails.append(f"missing figure {value}")
     if exp.get("figures_any") and not any(
-        figure_ok(t, exp["figures_any"]) for t in found
+        shows(t, v) for t in found for v in exp["figures_any"]
     ):
         fails.append(f"none of {exp['figures_any']}")
     low = answer.lower()

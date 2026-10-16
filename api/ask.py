@@ -21,6 +21,7 @@ from api.llm import LLMClient, LLMError
 from api.scope import Scope
 
 MAX_TURNS = 4
+UNGROUNDED = "the reply had figures that are not in the data"
 DEFAULT_CALL = {
     "period": "last_week",
     "start": None,
@@ -149,7 +150,7 @@ def answer(
                 result.update(answer=text, grounded=True, table=_rows(outputs))
                 return result
             result["ungrounded"] = grounding.ungrounded
-            reason = "the reply had figures that are not in the data"
+            reason = UNGROUNDED
             notice = (
                 "The answer had figures that could not be checked against the "
                 "data, so here are the numbers instead."

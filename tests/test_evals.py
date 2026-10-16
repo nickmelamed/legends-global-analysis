@@ -1,3 +1,6 @@
+import pytest
+
+from api.ask import UNGROUNDED
 from evals.run import cost, grade
 
 CASE = {
@@ -40,11 +43,40 @@ def test_each_failure_is_named():
 
 def test_fallback_fails_unless_allowed():
     reply = "Revenue was $84,328 against last year, down 8.2%."
-    assert grade(CASE, 200, body(reply, fallback="model unreachable")) == [
-        "fell back: model unreachable"
+    assert grade(CASE, 200, body(reply, fallback=UNGROUNDED)) == [
+        f"fell back: {UNGROUNDED}"
     ]
     allowed = {"expect": dict(CASE["expect"], allow_fallback=True)}
-    assert grade(allowed, 200, body(reply, fallback="model unreachable")) == []
+    assert grade(allowed, 200, body(reply, fallback=UNGROUNDED)) == []
+
+
+@pytest.mark.parametrize(
+    "reason", ["no recorded answer for this question", "model unreachable"]
+)
+def test_a_missing_recording_or_outage_never_passes(reason):
+    allowed = {"expect": dict(CASE["expect"], allow_fallback=True)}
+    assert f"fell back: {reason}" in grade(allowed, 200, body(None, fallback=reason))
+
+
+@pytest.mark.parametrize(
+    "reply",
+    [
+        "Labor ran 484.47 hours over 4 days, last year too.",
+        "Revenue was $84,328 over 8 days last year.",
+    ],
+)
+def test_required_figures_need_their_precision(reply):
+    case = {"expect": {"status": 200, "model_called": True, "figures": [3.82]}}
+    assert "missing figure 3.82" in grade(case, 200, body(reply))
+    loose = {"expect": dict(CASE["expect"], figures=[84328.25])}
+    assert "none of [-8.23, 1849]" in grade(loose, 200, body(reply))
+
+
+def test_a_signed_figure_must_match_its_sign():
+    case = {"expect": {"status": 200, "model_called": True, "figures": [-8.23]}}
+    assert grade(case, 200, body("Revenue fell 8.2%.")) == []
+    assert grade(case, 200, body("Revenue changed by -8.2%.")) == []
+    assert "missing figure -8.23" in grade(case, 200, body("It changed by +8.2%."))
 
 
 def test_status_mismatch_stops_grading():
