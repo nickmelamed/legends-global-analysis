@@ -63,6 +63,13 @@ WHERE venue_code = $venue AND business_date BETWEEN $start AND $end
 GROUP BY outlet ORDER BY outlet
 """
 
+# Power BI's productivity is one hundredth below ours at Summit. Summing
+# shifts rounded to 0.1 h is the candidate explanation tested here (R-004).
+SHIFT_ROUNDED_HOURS_SQL = """
+SELECT sum(round_even(hours, 1)), sum(round(hours, 1)) FROM fact_labor_shift
+WHERE venue_code = $venue AND work_date BETWEEN $start AND $end
+"""
+
 CHANNEL_SQL = """
 SELECT sales_channel, sum(ticket_revenue_cents) AS cents, sum(attendance) AS guests
 FROM daily_tickets
@@ -180,7 +187,14 @@ def render(rows, details, window, required) -> str:
             f"## {venue} detail",
             "",
             _payroll_note(d),
-            f"Guests per labor hour: {d['guests_per_labor_hour']:.4f}.",
+            f"Guests per labor hour: {d['guests_per_labor_hour']:.4f}. "
+            "With each shift rounded to 0.1 h first, hours are "
+            f"{d['shift_rounded_hours'][0]:.2f} rounding half to even and "
+            f"{d['shift_rounded_hours'][1]:.2f} rounding half up, giving "
+            f"{d['shift_rounded_guests_per_hour'][0]:.3f} and "
+            f"{d['shift_rounded_guests_per_hour'][1]:.3f} guests per hour. Showing "
+            f"{d['one_lower']:.2f} needs {d['one_lower_hours'][0]:.2f} to "
+            f"{d['one_lower_hours'][1]:.2f} hours.",
             "",
             "Power BI cross-check figures: Restaurant minus Bar "
             f"{d['restaurant_minus_bar']:,.2f}, F&B as the Ancillary visual "
@@ -224,12 +238,25 @@ def main(argv: list[str] | None = None) -> int:
             params = {"venue": venue, **window}
             outlets = con.execute(OUTLET_SQL, params).fetchall()
             channels = con.execute(CHANNEL_SQL, params).fetchall()
+            half_even, half_up = con.execute(SHIFT_ROUNDED_HOURS_SQL, params).fetchone()
+            per_hour = ours["attendance"] / ours["labor_hours"]
+            one_lower = round(round(per_hour, 2) - 0.01, 2)
             outlet = {o: _dollars(c) for o, c in outlets}
             channel = {c: _dollars(v) for c, v, _ in channels}
             details[venue] = {
                 "payroll_missing_rate_shifts": ours["payroll_missing_rate_shifts"],
                 "payroll_missing_rate_hours": ours["payroll_missing_rate_hours"],
-                "guests_per_labor_hour": ours["attendance"] / ours["labor_hours"],
+                "guests_per_labor_hour": per_hour,
+                "shift_rounded_hours": [half_even, half_up],
+                "shift_rounded_guests_per_hour": [
+                    ours["attendance"] / half_even,
+                    ours["attendance"] / half_up,
+                ],
+                "one_lower": one_lower,
+                "one_lower_hours": [
+                    ours["attendance"] / (one_lower + 0.005),
+                    ours["attendance"] / (one_lower - 0.005),
+                ],
                 "outlets": outlet,
                 "restaurant_minus_bar": round(outlet["Restaurant"] - outlet["Bar"], 2),
                 "fnb_as_ancillary_visual": round(

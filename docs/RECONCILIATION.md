@@ -3,7 +3,7 @@
 The reconciliation week is 2026-09-28 to 2026-10-04. Running `make load` and then
 `make reconcile` writes `build/reports/reconciliation.md`, which compares our
 unrounded figures with `tests/fixtures/pbi_targets.json`. Money and counts are
-rounded to the whole unit and hours to 0.1 before comparing. The targets are <!-- numbers: ok, Power BI display figures -->
+rounded to the whole unit and hours to 0.1 before comparing. The targets are <!-- numbers: ok, a precision, not a result -->
 never edited.
 
 All 24 targets match except the Riverbend total revenue, which is $1 off
@@ -59,10 +59,18 @@ would explain it, and the data cannot tell that from a deliberate exclusion.
 The app's channel chart follows Power BI and carries a note with the
 Affiliate amount (D-007). The query is `CHANNEL_SQL`, venue SSD.
 
-## R-004: Productivity 3.82 against Power BI's 3.81 <!-- numbers: ok, Power BI display figures -->
+## R-004: Productivity 3.82 against Power BI's 3.81
 
 Our Summit guests per labor hour is 3.8165, from 1,849 guests and 484.47
-hours. Power BI shows 3.81, which needs 484.67 to 485.94 hours. Rounding <!-- numbers: ok, Power BI display figures -->
-each shift to 0.1 h before summing gives 484.90 hours and 3.813. This is the <!-- numbers: ok, Power BI display figures -->
-only candidate found, so it is likely but not proven. The hours target (484.5)
-matches the unrounded sum, so the app shows 3.82.
+hours, which displays as 3.82. Showing 3.81 needs 484.67 to 485.94 hours.
+Rounding each shift to 0.1 h before summing lands in that range, at 485.00
+hours rounding half to even and 485.40 rounding half up (3.812 and 3.809
+guests per hour). DATA_PROFILE.md gives a slightly lower figure for the
+same idea, because pandas rounds the binary float and some half tenths
+round down. Every
+variant tried displays 3.81, so per-shift rounding is the likely cause, but
+which rounding Power BI uses is not known without the .pbix file. The hours
+target (484.5) matches the unrounded sum, so the app shows 3.82.
+
+The query is `SHIFT_ROUNDED_HOURS_SQL` in `pipeline/reconcile.py`, venue SSD,
+over the 79 Summit shifts in the week, 15 of which end in a half tenth.
