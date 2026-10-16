@@ -6,11 +6,20 @@ from fastapi.routing import APIRoute
 from api.main import create_app
 from api.settings import Settings
 
-ROUTES = sorted(
-    r.path
+APP_ROUTES = [
+    r
     for r in create_app(Settings(db_path=None, today=None, dev_user=None)).routes
     if isinstance(r, APIRoute) and r.path.startswith("/api")
-)
+]
+ROUTES = sorted(r.path for r in APP_ROUTES)
+POST_ROUTES = {r.path for r in APP_ROUTES if "POST" in r.methods}
+
+
+def call(client, path, params=None):
+    if path in POST_ROUTES:
+        body = {"question": "How did last week compare to last year?"}
+        return client.post(path, params=params, json=body)
+    return client.get(path, params=params)
 
 
 def test_every_api_route_is_listed():
@@ -20,6 +29,7 @@ def test_every_api_route_is_listed():
         "/api/trend",
         "/api/freshness",
         "/api/export.csv",
+        "/api/ask",
     } <= set(ROUTES)
 
 
@@ -28,13 +38,13 @@ def test_every_api_route_is_listed():
     "venues", [["RTL"], ["SSD", "RTL"], ["XXX"]], ids=["other", "mixed", "unknown"]
 )
 def test_restricted_user_gets_403_outside_scope(make_client, path, venues):
-    r = make_client("marcus@dev").get(path, params={"venue": venues})
+    r = call(make_client("marcus@dev"), path, {"venue": venues})
     assert r.status_code == 403
 
 
 @pytest.mark.parametrize("path", ROUTES)
 def test_restricted_user_default_is_their_venue_only(make_client, path):
-    r = make_client("marcus@dev").get(path)
+    r = call(make_client("marcus@dev"), path)
     assert r.status_code == 200
     if path.endswith(".csv"):
         assert "# venues: SSD\n" in r.text
@@ -49,7 +59,7 @@ def test_restricted_user_default_is_their_venue_only(make_client, path):
 @pytest.mark.parametrize("path", ROUTES)
 @pytest.mark.parametrize("user", [None, "eve@dev"], ids=["none", "unknown"])
 def test_unknown_user_gets_401(make_client, path, user):
-    assert make_client(user).get(path).status_code == 401
+    assert call(make_client(user), path).status_code == 401
 
 
 def test_admin_can_read_another_venue(make_client):

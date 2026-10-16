@@ -15,9 +15,11 @@ from typing import Annotated
 import duckdb
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.responses import Response
+from pydantic import BaseModel, Field
 
-from api import overview, trend
+from api import ask, overview, trend
 from api.auth import load_user, signed_in_email
+from api.llm import AnthropicClient, LLMClient, RecordedClient
 from api.queries import FEEDS, TicketFilter
 from api.scope import Scope, scoped_venues
 from api.settings import Settings
@@ -93,10 +95,24 @@ WindowDep = Annotated[Window, Depends(get_window)]
 FilterDep = Annotated[TicketFilter, Depends(get_ticket_filter)]
 
 
+class AskBody(BaseModel):
+    """A question for Ask the data."""
+
+    question: str = Field(min_length=1, max_length=500)
+
+
+def make_llm(settings: Settings) -> LLMClient:
+    """Return the model client ``ASK_CLIENT`` names. Recorded is the default."""
+    if settings.ask_client == "anthropic":
+        return AnthropicClient(settings.ask_model)
+    return RecordedClient(settings.recordings_dir)
+
+
 def create_app(settings: Settings | None = None) -> FastAPI:
     """Build the app from ``settings``, or from the environment if None."""
     app = FastAPI(title="Attractions API")
     app.state.settings = settings or Settings.from_env()
+    app.state.llm = make_llm(app.state.settings)
 
     @app.get("/api/filters")
     def filters(scope: ScopeDep) -> dict:
@@ -129,6 +145,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     ) -> dict:
         """Return the revenue trend and its comparison."""
         return trend.build(scope, window, grain)
+
+    @app.post("/api/ask")
+    def ask_data(scope: ScopeDep, body: AskBody) -> dict:
+        """Answer a question with figures checked against the tool outputs."""
+        names = dict(
+            scope.con.execute("SELECT venue_code, venue_name FROM dim_venue").fetchall()
+        )
+        today = app.state.settings.today
+        return ask.answer(body.question, scope, today, app.state.llm, names)
 
     @app.get("/api/freshness")
     def freshness(scope: ScopeDep) -> dict:
