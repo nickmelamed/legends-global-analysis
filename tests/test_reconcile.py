@@ -1,3 +1,4 @@
+import duckdb
 import pytest
 
 from pipeline import reconcile
@@ -38,3 +39,32 @@ def test_required_venue_miss_fails_the_run():
     assert reconcile.required_misses(rows, ["SSD"]) == []
     rows[0]["status"] = "miss"
     assert reconcile.required_misses(rows, ["SSD"]) == [rows[0]]
+
+
+def test_week_hours_are_rounded_once():
+    con = duckdb.connect()
+    con.execute(
+        "CREATE TABLE daily_tickets AS SELECT 'SSD' AS venue_code, "
+        "DATE '2026-09-28' AS business_date, 10 AS attendance, "
+        "1000 AS ticket_revenue_cents"
+    )
+    con.execute(
+        "CREATE TABLE daily_pos AS SELECT 'SSD' AS venue_code, "
+        "DATE '2026-09-28' AS business_date, 'fnb' AS revenue_line, "
+        "500 AS revenue_cents"
+    )
+    con.execute(
+        "CREATE TABLE daily_private_events AS SELECT 'SSD' AS venue_code, "
+        "DATE '2026-09-28' AS event_date, 0 AS revenue_cents"
+    )
+    # 484.449 must compare as 484.4, not 484.45 then 484.5.
+    con.execute(
+        "CREATE TABLE daily_labor AS SELECT 'SSD' AS venue_code, "
+        "DATE '2026-09-28' AS work_date, 484.449::DOUBLE AS hours, "
+        "100 AS payroll_cents, 0 AS missing_rate_shifts, "
+        "0.0::DOUBLE AS missing_rate_hours"
+    )
+    ours = reconcile.week_actuals(con, "SSD", "2026-09-28", "2026-10-04")
+    assert reconcile.compare("labor_hours", ours["labor_hours"], 484.5)["status"] == (
+        "miss"
+    )

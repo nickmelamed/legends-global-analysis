@@ -124,7 +124,7 @@ def week_actuals(con, venue: str, start: str, end: str) -> dict:
         "merch_revenue": _dollars(row["merch"]),
         "private_events_revenue": _dollars(row["pe"]),
         "total_revenue": _dollars(total),
-        "labor_hours": None if row["hours"] is None else round(row["hours"], 2),
+        "labor_hours": row["hours"],
         "payroll": _dollars(row["payroll"]),
         "payroll_missing_rate_shifts": int(row["missing_shifts"] or 0),
         "payroll_missing_rate_hours": round(row["missing_hours"] or 0, 2),
