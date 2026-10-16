@@ -1,0 +1,231 @@
+"""FastAPI app. Run with ``uvicorn api.main:app``.
+
+Every route takes a ``Scope`` from ``get_scope``, so none can read venue data
+without the scope helper.
+"""
+
+from __future__ import annotations
+
+import csv
+import io
+from collections.abc import Iterator
+from datetime import UTC, date, datetime, timedelta
+from typing import Annotated
+
+import duckdb
+from fastapi import Depends, FastAPI, HTTPException, Query, Request
+from fastapi.responses import Response
+
+from api import overview, trend
+from api.auth import load_user, signed_in_email
+from api.queries import TicketFilter
+from api.scope import Scope, scoped_venues
+from api.settings import Settings
+from api.windows import CompareMode, Preset, Window, resolve
+
+
+def get_con(request: Request) -> Iterator[duckdb.DuckDBPyConnection]:
+    """Open the database read-only for one request."""
+    con = duckdb.connect(str(request.app.state.settings.db_path), read_only=True)
+    try:
+        yield con
+    finally:
+        con.close()
+
+
+def get_scope(
+    request: Request,
+    con: Annotated[duckdb.DuckDBPyConnection, Depends(get_con)],
+    venue: Annotated[list[str] | None, Query()] = None,
+) -> Scope:
+    """Return the signed-in user's scope for the venues this request asks for."""
+    user = load_user(con, signed_in_email(request))
+    return Scope(user=user, venues=scoped_venues(user, venue), con=con)
+
+
+def get_window(
+    request: Request,
+    preset: Preset | None = None,
+    start: date | None = None,
+    end: date | None = None,
+    compare: bool = True,
+    compare_mode: CompareMode = "prior_period",
+) -> Window:
+    """Resolve the date filters. A start and end with no preset is custom."""
+    if preset is None:
+        preset = "custom" if start or end else "last_week"
+    today = request.app.state.settings.today
+    return resolve(preset, start, end, compare, compare_mode, today)
+
+
+def get_ticket_filter(
+    scope: Annotated[Scope, Depends(get_scope)],
+    package_class: Annotated[list[str] | None, Query()] = None,
+    sales_channel: Annotated[list[str] | None, Query()] = None,
+) -> TicketFilter:
+    """Return the ticket filters, rejecting values the data does not have."""
+    tf = TicketFilter(tuple(package_class or ()), tuple(sales_channel or ()))
+    if tf.active:
+        known = _filter_values(scope)
+        if set(tf.package_classes) - set(known["package_classes"]) or set(
+            tf.sales_channels
+        ) - set(known["sales_channels"]):
+            raise HTTPException(422, "unknown package class or sales channel")
+    return tf
+
+
+def _filter_values(scope: Scope) -> dict:
+    rows = scope.query(
+        "SELECT DISTINCT package_class, sales_channel FROM daily_tickets "
+        "WHERE venue_code IN {venues}"
+    ).fetchall()
+    return {
+        "package_classes": sorted({p for p, _ in rows}),
+        "sales_channels": sorted({c for _, c in rows}),
+    }
+
+
+ScopeDep = Annotated[Scope, Depends(get_scope)]
+WindowDep = Annotated[Window, Depends(get_window)]
+FilterDep = Annotated[TicketFilter, Depends(get_ticket_filter)]
+
+
+def create_app(settings: Settings | None = None) -> FastAPI:
+    """Build the app. Tests pass their own settings."""
+    app = FastAPI(title="Attractions API")
+    app.state.settings = settings or Settings.from_env()
+
+    @app.get("/api/filters")
+    def filters(scope: ScopeDep) -> dict:
+        """Return the user's venues and the ticket filter values."""
+        names = dict(
+            scope.con.execute("SELECT venue_code, venue_name FROM dim_venue").fetchall()
+        )
+        return {
+            "user": {
+                "email": scope.user.email,
+                "display_name": scope.user.display_name,
+                "role": scope.user.role,
+            },
+            "venues": [{"code": v, "name": names.get(v, v)} for v in scope.user.venues],
+            "selected_venues": list(scope.venues),
+            **_filter_values(scope),
+            "presets": ["last_week", "month_to_date", "year_to_date", "custom"],
+            "compare_modes": ["prior_period", "last_year"],
+            "app_today": app.state.settings.today.isoformat(),
+        }
+
+    @app.get("/api/overview")
+    def get_overview(scope: ScopeDep, window: WindowDep, tf: FilterDep) -> dict:
+        """Return the Overview KPIs, labor, departments and pace."""
+        return overview.build(scope, window, tf)
+
+    @app.get("/api/trend")
+    def get_trend(
+        scope: ScopeDep, window: WindowDep, grain: trend.Grain = "day"
+    ) -> dict:
+        """Return the revenue trend and its comparison."""
+        return trend.build(scope, window, grain)
+
+    @app.get("/api/freshness")
+    def freshness(scope: ScopeDep) -> dict:
+        """Return when the data last loaded and whether it is stale."""
+        today = app.state.settings.today
+        run = scope.con.execute(
+            "SELECT run_id, finished_at FROM load_runs ORDER BY finished_at DESC"
+        ).fetchone()
+        latest = dict(
+            scope.query(
+                "SELECT feed, max(business_date) FROM feed_coverage "
+                "WHERE venue_code IN {venues} AND status = 'ok' GROUP BY feed"
+            ).fetchall()
+        )
+        expected = today - timedelta(days=1)
+        stale_feeds = sorted(
+            f
+            for f in ("tickets", "pos", "labor")
+            if (latest.get(f) or date.min) < expected
+        )
+        return {
+            "venues": list(scope.venues),
+            "app_today": today.isoformat(),
+            "last_load_run": run[0] if run else None,
+            "last_load_finished_at": run[1].isoformat() if run else None,
+            "latest_day": {f: d.isoformat() for f, d in latest.items()},
+            "expected_latest_day": expected.isoformat(),
+            "stale": bool(stale_feeds) or run is None,
+            "stale_feeds": stale_feeds,
+        }
+
+    @app.get("/api/export.csv")
+    def export_csv(scope: ScopeDep, window: WindowDep, tf: FilterDep) -> Response:
+        """Return the Overview as CSV, with the filters and export time on top."""
+        data = overview.build(scope, window, tf)
+        buf = io.StringIO()
+        w = window.as_dict()
+        comparison = (
+            f"{w['comparison_start']} to {w['comparison_end']} ({w['compare_mode']})"
+            if w["comparison_start"]
+            else "off"
+        )
+        for line in (
+            "Attractions Overview export",
+            f"exported_at: {datetime.now(UTC).isoformat(timespec='seconds')}",
+            f"app_today: {app.state.settings.today.isoformat()}",
+            f"user: {scope.user.email}",
+            f"venues: {', '.join(scope.venues)}",
+            f"window: {w['start']} to {w['end']}",
+            f"comparison: {comparison}",
+            f"package_class: {', '.join(tf.package_classes) or 'all'}",
+            f"sales_channel: {', '.join(tf.sales_channels) or 'all'}",
+            "ticket filters apply to: " + ", ".join(overview.TICKET_FILTERED),
+        ):
+            buf.write(f"# {line}\n")
+        out = csv.writer(buf, lineterminator="\n")
+        out.writerow(
+            [
+                "section",
+                "metric",
+                "unit",
+                "current",
+                "comparison",
+                "delta_pct",
+                "pace_pct",
+                "data_gap",
+                "incomplete",
+            ]
+        )
+        for section in ("kpis", "labor", "departments", "revenue_lines"):
+            for m in data[section]:
+                pace = m["pace"] or {}
+                out.writerow(
+                    [
+                        section,
+                        m["label"],
+                        m["unit"],
+                        _cell(m["current"]),
+                        _cell(m["comparison"]),
+                        _cell(m["delta_pct"]),
+                        _cell(pace.get("pct")),
+                        m["data_gap"],
+                        bool(m.get("incomplete")),
+                    ]
+                )
+        filename = f"attractions-overview-{w['start']}-{w['end']}.csv"
+        return Response(
+            buf.getvalue(),
+            media_type="text/csv",
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        )
+
+    return app
+
+
+def _cell(value: float | None) -> str:
+    """Return a CSV cell. No data is written as "no data", never 0."""
+    if value is None:
+        return "no data"
+    return f"{value:.2f}" if isinstance(value, float) else str(value)
+
+
+app = create_app()
