@@ -23,7 +23,7 @@ after compaction.
 
 ## Next
 
-- [ ] Push and confirm the project-checks step passes on GitHub Actions
+- [x] Push and confirm the project-checks step passes on GitHub Actions
 - [ ] Cut BACKLOG to one page and WRITEUP to three
 
 ## Done

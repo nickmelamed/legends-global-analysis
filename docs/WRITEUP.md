@@ -126,7 +126,7 @@ case forbids the word "zero". I left it failing. The check needs fixing, and the
 as written.
 
 CI runs `make ci` (lint, types, tests and style) on pull requests and
-pushes to main, but it has not run on GitHub yet. The supplied data is not
+pushes to main, and the first run on GitHub passed. The supplied data is not
 in git, so CI cannot run the real-data test, the reconciliation, the evals
 or `make numbers`. Those run locally, and the last of them in the gate
 before every agent turn ends. In production the same reconciliation would run after each nightly load
