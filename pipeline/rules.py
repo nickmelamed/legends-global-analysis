@@ -363,6 +363,53 @@ def crosses_cutover(start: date, end: date) -> bool:
     return start < CUTOVER_DATE <= end
 
 
+# Presets end on the day before "today", the last complete business day
+# (D-011). days_total is the length of the whole week, month or year, so pace
+# can show how far through the period the window is.
+def last_week(today: date) -> tuple[date, date, int]:
+    """Return the Monday to Sunday week before the week containing ``today``."""
+    start = week_start(today) - timedelta(days=7)
+    return start, start + timedelta(days=6), 7
+
+
+def month_to_date(today: date) -> tuple[date, date, int]:
+    """Return the month containing yesterday, from its first day to yesterday."""
+    end = today - timedelta(days=1)
+    start = end.replace(day=1)
+    next_month = (start + timedelta(days=32)).replace(day=1)
+    return start, end, (next_month - start).days
+
+
+def year_to_date(today: date) -> tuple[date, date, int]:
+    """Return the year containing yesterday, from 1 January to yesterday."""
+    end = today - timedelta(days=1)
+    start = end.replace(month=1, day=1)
+    return start, end, (start.replace(year=start.year + 1) - start).days
+
+
+def ratio(numerator: float | None, denominator: float | None) -> float | None:
+    """Return numerator / denominator, or None when either is missing or zero.
+
+    Missing data is not zero, so a ratio over no data is None, not 0.
+    """
+    if numerator is None or denominator is None or denominator == 0:
+        return None
+    return numerator / denominator
+
+
+PACE_GREEN_PCT = 100.0
+PACE_AMBER_PCT = 90.0
+
+
+def pace_status(pct: float | None) -> str | None:
+    """Return green at 100% of plan or more, amber from 90%, red below 90%."""
+    if pct is None:
+        return None
+    if pct >= PACE_GREEN_PCT:
+        return "green"
+    return "amber" if pct >= PACE_AMBER_PCT else "red"
+
+
 FEED_OK = "ok"
 FEED_NO_DATA = "no_data"
 
