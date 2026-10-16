@@ -88,6 +88,11 @@ class AnthropicClient:
             raise LLMError(f"model returned HTTP {e.status_code}") from e
         except self._anthropic.APIConnectionError as e:
             raise LLMError("model unreachable") from e
+        except self._anthropic.AnthropicError as e:
+            raise LLMError("model call failed") from e
+        except TypeError as e:
+            # The SDK raises TypeError when it finds no API key or profile.
+            raise LLMError("no model credentials") from e
         out = response.to_dict()
         return {
             "content": out["content"],

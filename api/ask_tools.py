@@ -140,9 +140,9 @@ def _metric(m: dict) -> dict:
         "unit": m["unit"],
         "current": _round(current),
         "comparison": _round(comparison),
-        "change": None
-        if current is None or comparison is None
-        else round(current - comparison, 2),
+        # Overview leaves out the percent change over missing days, so the
+        # dollar change follows it rather than making its own call.
+        "change": None if m["delta_pct"] is None else round(current - comparison, 2),
         "percent_change": _round(m["delta_pct"]),
         "current_has_no_data_days": m["data_gap"],
         "comparison_has_no_data_days": m["comparison_data_gap"],

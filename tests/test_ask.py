@@ -5,11 +5,13 @@ revenue ($390 a day plus a $500 event). There is nothing a year earlier.
 """
 
 import json
+from types import SimpleNamespace
 
+import anthropic
 import pytest
 
 from api import ask_tools
-from api.llm import LLMError, RecordedClient, recording_key
+from api.llm import AnthropicClient, LLMError, RecordedClient, recording_key
 
 FORBIDDEN_KEYS = {
     "customer_country",
@@ -215,3 +217,48 @@ def test_missing_day_is_no_data_not_zero(make_client):
     assert rows["Attendance"]["current"] is None
     assert rows["Attendance"]["no_data"] is True
     assert body["grounded"] is True
+
+
+def test_no_change_is_given_over_missing_days(make_client):
+    week = dict(LAST_WEEK, compare="prior_period")
+    fake = FakeClient(tool_use(args=week), text("I don't know."))
+    ask(make_client, fake, venue="RTL")
+    out = json.loads(fake.calls[1][-1]["content"][0]["content"])
+    metrics = {m["metric"]: m for m in out["metrics"]}
+    assert metrics["Attendance"]["current_has_no_data_days"] is True
+    assert metrics["Attendance"]["comparison"] == 70
+    assert metrics["Attendance"]["change"] is None
+    assert metrics["Attendance"]["percent_change"] is None
+    assert metrics["Total revenue"]["change"] is None
+
+
+@pytest.mark.parametrize(
+    "error",
+    [
+        anthropic.AnthropicError("response did not validate"),
+        TypeError("Could not resolve authentication method."),
+    ],
+)
+def test_anthropic_client_turns_sdk_failures_into_llm_errors(monkeypatch, error):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key-not-used")
+    client = AnthropicClient("claude-opus-5-5")
+
+    def fail(**kwargs):
+        raise error
+
+    client._client = SimpleNamespace(messages=SimpleNamespace(create=fail))
+    with pytest.raises(LLMError):
+        client.create("system", [], [{"role": "user", "content": "q"}])
+
+
+def test_anthropic_client_without_credentials_falls_back(make_client, monkeypatch):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key-not-used")
+    llm = AnthropicClient("claude-opus-5-5")
+
+    def no_key(**kwargs):
+        raise TypeError("Could not resolve authentication method.")
+
+    llm._client = SimpleNamespace(messages=SimpleNamespace(create=no_key))
+    r = ask(make_client, llm)
+    assert r.status_code == 200
+    assert r.json()["fallback"]

@@ -149,6 +149,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     @app.post("/api/ask")
     def ask_data(scope: ScopeDep, body: AskBody) -> dict:
         """Answer a question with figures checked against the tool outputs."""
+        # Names of every venue, unscoped, so a question naming one outside the
+        # user's scope can be refused. Only the selected names are returned.
         names = dict(
             scope.con.execute("SELECT venue_code, venue_name FROM dim_venue").fetchall()
         )
