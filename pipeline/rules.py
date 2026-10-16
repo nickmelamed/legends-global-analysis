@@ -7,6 +7,8 @@ docs/DATA_PROFILE.md and the decisions in docs/DECISIONS.md.
 
 from __future__ import annotations
 
+from datetime import date, timedelta
+
 import pandas as pd
 
 
@@ -300,3 +302,65 @@ def private_event_revenue(df: pd.DataFrame) -> pd.DataFrame:
             "revenue_cents": to_cents(events["grand_total"]),
         }
     )
+
+
+# Calendar
+
+# Ticketing moved from LT to NT on this date. Package names change across it,
+# so last-year comparisons use package_class (H4).
+CUTOVER_DATE = date(2026, 2, 3)
+# 52 weeks, so a last-year window starts on the same weekday.
+LAST_YEAR_OFFSET_DAYS = 364
+
+
+def week_start(day: date) -> date:
+    """Return the Monday of the Monday to Sunday week containing ``day``."""
+    return day - timedelta(days=day.weekday())
+
+
+def prior_period(start: date, end: date) -> tuple[date, date]:
+    """Return the window of equal length that ends the day before ``start``."""
+    length = end - start
+    prior_end = start - timedelta(days=1)
+    return prior_end - length, prior_end
+
+
+def last_year(start: date, end: date) -> tuple[date, date]:
+    """Return the same window 364 days earlier."""
+    offset = timedelta(days=LAST_YEAR_OFFSET_DAYS)
+    return start - offset, end - offset
+
+
+def crosses_cutover(start: date, end: date) -> bool:
+    """Return whether a window holds days from both ticketing systems."""
+    return start < CUTOVER_DATE <= end
+
+
+# Missing data
+
+FEED_OK = "ok"
+FEED_NO_DATA = "no_data"
+
+
+def feed_day_status(present: set[date], start: date, end: date) -> dict[date, str]:
+    """Return ok or no_data for each day of a venue's feed.
+
+    A day with no rows is a missing feed, shown as "no data" and never as zero
+    (D-005).
+    """
+    days = (start + timedelta(days=i) for i in range((end - start).days + 1))
+    return {d: FEED_OK if d in present else FEED_NO_DATA for d in days}
+
+
+def outlet_day_value(
+    outlet_has_rows: bool, venue_has_rows: bool, revenue: float | None
+) -> float | None:
+    """Return an outlet's revenue for a day, zero, or None for no data.
+
+    An outlet with no rows on a day the venue's other outlets have rows was
+    closed or sold nothing, so it is zero (D-007). With no rows from the
+    venue at all, the feed is missing and the value is None (D-005).
+    """
+    if outlet_has_rows:
+        return revenue
+    return 0.0 if venue_has_rows else None
