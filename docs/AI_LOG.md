@@ -289,3 +289,5 @@ no data for that day and that it "shouldn't be read as zero visitors",
 which is the behaviour the case wants. The forbidden list is too blunt.
 The case was left as is for Nick to decide, since cases.yaml is not edited
 to make a case pass.
+docs/screenshots/ask-1440-light.png was retaken with the recorded Opus
+answer and now shows model output, not the e2e fixture.
