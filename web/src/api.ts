@@ -90,6 +90,33 @@ export interface Freshness {
   stale_feeds: { venue: string; feed: string }[];
 }
 
+export interface AskRow {
+  metric: string;
+  unit: Metric["unit"];
+  start: string;
+  end: string | null;
+  compared: boolean;
+  comparison_start: string | null;
+  comparison_end: string | null;
+  current: number | null;
+  comparison: number | null;
+  percent_change: number | null;
+  no_data: boolean;
+}
+
+export interface AskReply {
+  venues: string[];
+  answer: string | null;
+  grounded: boolean;
+  fallback: string | null;
+  ungrounded: string[];
+  tool_calls: { name: string; args: Record<string, unknown> }[];
+  table: AskRow[];
+  model: string;
+  model_called: boolean;
+  usage: { input_tokens: number; output_tokens: number };
+}
+
 export class ApiError extends Error {
   constructor(
     public status: number,

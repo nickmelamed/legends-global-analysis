@@ -1,0 +1,40 @@
+{
+  "question": "How did last week compare to last year?",
+  "model": "fixture",
+  "note": "Hand-written e2e fixture for the replay path. Not model output.",
+  "turns": [
+    {
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "t1",
+          "name": "get_kpis",
+          "input": {
+            "period": "last_week",
+            "start": null,
+            "end": null,
+            "compare": "last_year"
+          }
+        }
+      ],
+      "stop_reason": "tool_use",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      }
+    },
+    {
+      "content": [
+        {
+          "type": "text",
+          "text": "Total revenue was $84,328.25 last week, down 8.23% from $91,891.36 a year earlier."
+        }
+      ],
+      "stop_reason": "end_turn",
+      "usage": {
+        "input_tokens": 0,
+        "output_tokens": 0
+      }
+    }
+  ]
+}

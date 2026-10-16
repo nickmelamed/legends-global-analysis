@@ -10,6 +10,7 @@ export const PAGES = [
   { path: "/events", label: "Events" },
   { path: "/pacing", label: "Pacing Report" },
   { path: "/cost-watch", label: "Cost Watch" },
+  { path: "/ask", label: "Ask the data" },
 ];
 export const FOOTER_PAGES = [
   { path: "/support", label: "Support" },

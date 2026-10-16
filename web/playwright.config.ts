@@ -12,7 +12,13 @@ export default defineConfig({
       command: "python3 -m uvicorn api.main:app --port 8766",
       cwd: "..",
       url: "http://localhost:8766/api/freshness",
-      env: { DEV_USER: "nick@dev", APP_TODAY: "2026-10-05" },
+      // Ask the data replays a fixture recording, never a live model.
+      env: {
+        DEV_USER: "nick@dev",
+        APP_TODAY: "2026-10-05",
+        ASK_CLIENT: "recorded",
+        ASK_RECORDINGS_DIR: "web/e2e/recordings",
+      },
       reuseExistingServer: false,
     },
     {

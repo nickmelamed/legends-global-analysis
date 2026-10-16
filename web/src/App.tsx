@@ -5,6 +5,7 @@ import { FreshnessFooter } from "./components/FreshnessFooter";
 import { FOOTER_PAGES, PAGES, Sidebar } from "./components/Sidebar";
 import { TopBar } from "./components/TopBar";
 import { useFilters } from "./filters";
+import { Ask } from "./pages/Ask";
 import { Overview } from "./pages/Overview";
 import { Placeholder } from "./pages/Placeholder";
 import { useTheme } from "./theme";
@@ -39,8 +40,9 @@ export function App() {
           <Routes>
             <Route path="/" element={<Navigate to={{ pathname: "/overview", search }} replace />} />
             <Route path="/overview" element={<Overview theme={theme} />} />
+            <Route path="/ask" element={<Ask />} />
             {[...PAGES, ...FOOTER_PAGES]
-              .filter((p) => p.path !== "/overview")
+              .filter((p) => p.path !== "/overview" && p.path !== "/ask")
               .map((p) => (
                 <Route key={p.path} path={p.path} element={<Placeholder title={p.label} />} />
               ))}

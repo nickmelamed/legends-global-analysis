@@ -26,6 +26,25 @@ export function formatValue(value: number | null, unit: Metric["unit"]): string 
   }
 }
 
+// Full figures, so a table can be checked against an answer to the cent.
+export function formatExact(value: number | null, unit: Metric["unit"]): string {
+  if (value === null) return NO_DATA;
+  const n = (digits: number) =>
+    value.toLocaleString("en-US", { minimumFractionDigits: digits, maximumFractionDigits: digits });
+  switch (unit) {
+    case "usd":
+      return `$${n(2)}`;
+    case "count":
+      return n(0);
+    case "hours":
+      return `${n(2)} h`;
+    case "ratio":
+      return n(2);
+    case "pct":
+      return `${n(2)}%`;
+  }
+}
+
 export function formatPct(value: number | null): string {
   return value === null ? NO_DATA : `${value.toFixed(1)}%`;
 }
