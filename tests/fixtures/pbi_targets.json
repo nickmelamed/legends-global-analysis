@@ -1,0 +1,40 @@
+{
+  "window": {"start": "2026-09-28", "end": "2026-10-04"},
+  "required": ["SSD"],
+  "tolerance": {"money": "rounded dollar", "hours": 0.1},
+  "venues": {
+    "SSD": {
+      "venue_name": "Summit Sky Deck",
+      "attendance": 1849,
+      "ticket_revenue": 61576,
+      "fnb_revenue": 9230,
+      "merch_revenue": 6957,
+      "private_events_revenue": 6565,
+      "total_revenue": 84328,
+      "labor_hours": 484.5,
+      "payroll": 9347
+    },
+    "RTL": {
+      "venue_name": "Riverbend Tower Lookout",
+      "attendance": 883,
+      "ticket_revenue": 23778,
+      "fnb_revenue": 3531,
+      "merch_revenue": 2586,
+      "private_events_revenue": 26325,
+      "total_revenue": 56220,
+      "labor_hours": 358.7,
+      "payroll": 6942
+    },
+    "TRO": {
+      "venue_name": "Three Rivers Observatory",
+      "attendance": 771,
+      "ticket_revenue": 20283,
+      "fnb_revenue": 2769,
+      "merch_revenue": 1979,
+      "private_events_revenue": 17565,
+      "total_revenue": 42596,
+      "labor_hours": 321.2,
+      "payroll": 6258
+    }
+  }
+}
