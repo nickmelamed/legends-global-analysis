@@ -166,6 +166,8 @@ def test_transform_applies_the_rules():
     assert pos[(date(2026, 10, 4), "Bar")] == 0
     labor = tables["daily_labor"].set_index("department")
     assert labor.loc["Restaurant", "missing_rate_shifts"] == 1
+    # Every Restaurant shift that day lacks a rate, so payroll is unknown.
+    assert pd.isna(labor.loc["Restaurant", "payroll_cents"])
     assert labor.loc["Operations", "payroll_cents"] == 14400
     assert tables["daily_private_events"]["revenue_cents"].sum() == 656500
 

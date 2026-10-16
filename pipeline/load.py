@@ -261,14 +261,17 @@ def _labor_tables(src, venues, checks):
         }
     )
     fact["missing_rate_hours"] = fact["hours"].where(fact["missing_rate"], 0.0)
-    daily = fact.groupby(["venue_code", "work_date", "department"], as_index=False).agg(
+    keys = ["venue_code", "work_date", "department"]
+    daily = fact.groupby(keys, as_index=False).agg(
         hours=("hours", "sum"),
-        payroll_cents=("payroll_cents", "sum"),
         shifts=("hours", "size"),
         missing_rate_shifts=("missing_rate", "sum"),
         missing_rate_hours=("missing_rate_hours", "sum"),
     )
-    daily["payroll_cents"] = daily["payroll_cents"].astype("int64")
+    # A department-day where no shift has a rate has unknown payroll, not $0.
+    payroll = fact.groupby(keys)["payroll_cents"].sum(min_count=1)
+    daily["payroll_cents"] = payroll.to_numpy()
+    daily["payroll_cents"] = daily["payroll_cents"].astype("Int64")
     return fact.drop(columns="missing_rate_hours"), daily
 
 
