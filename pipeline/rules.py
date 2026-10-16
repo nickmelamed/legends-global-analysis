@@ -194,3 +194,109 @@ def order_subtotal_mismatches(df: pd.DataFrame) -> int:
         net=("net", "sum"), subtotal=("subtotal", "first")
     )
     return int((per_order["net"] != per_order["subtotal"]).sum())
+
+
+# Labor
+
+# Raw labels after strip and lower-case. "Food & Beverage" holds only Host,
+# Server, Busser and Bartender shifts, the restaurant positions (H7).
+LABOR_DEPARTMENT = {
+    "operations": "Operations",
+    "ops": "Operations",
+    "guest services-ops": "Operations",
+    "restaurant": "Restaurant",
+    "f&b - restaurant": "Restaurant",
+    "fnb rest": "Restaurant",
+    "food & beverage": "Restaurant",
+    "kitchen": "Kitchen",
+    "back of house": "Kitchen",
+    "boh": "Kitchen",
+    "cafe": "Cafe",
+    "f&b - cafe": "Cafe",
+    "merchandise": "Merchandise",
+    "merch": "Merchandise",
+    "gift shop": "Merchandise",
+    "retail": "Merchandise",
+    "support": "Support",
+    "security & support": "Support",
+    "facilities/support": "Support",
+}
+
+
+def labor_department(raw: str) -> str:
+    """Return the canonical labor department for a raw label."""
+    try:
+        return LABOR_DEPARTMENT[raw.strip().lower()]
+    except KeyError:
+        raise UnmappedLabel(f"labor department {raw!r} is not mapped") from None
+
+
+def normalise_location(raw: str, venue_names: list[str]) -> str:
+    """Return the venue name a case or whitespace variant refers to."""
+    by_key = {name.lower(): name for name in venue_names}
+    try:
+        return by_key[raw.strip().lower()]
+    except KeyError:
+        raise UnmappedLabel(f"location_name {raw!r} is not a known venue") from None
+
+
+def labor_shift_measures(df: pd.DataFrame) -> pd.DataFrame:
+    """Return work date, hours, payroll and the missing-rate flag per shift.
+
+    A shift belongs to its start date (``date``), including overnight shifts.
+    Hours are ``total_hrs``, which already carries the 0.5 h unpaid break.
+    Payroll is the exported ``total_earnings``, without tips. A shift with no
+    rate has no payroll (null, not zero) and marks its window incomplete,
+    because rates change on almost every shift and a fill would be a guess
+    (D-006).
+    """
+    missing = df["rate"].isna() | df["total_earnings"].isna()
+    payroll = (df["total_earnings"] * 100).round().astype("Int64")
+    return pd.DataFrame(
+        {
+            "work_date": df["date"].dt.date,
+            "hours": df["total_hrs"].astype(float),
+            "payroll_cents": payroll.mask(missing),
+            "missing_rate": missing,
+        },
+        index=df.index,
+    )
+
+
+# Private events
+
+EVENT_STATUS_COUNTS = {
+    "Definite": True,
+    "Tentative": False,
+    "Lost": False,
+    "Canceled": False,
+    "Lead": False,
+}
+
+
+def is_countable_event(record_type: str, status: str) -> bool:
+    """Return whether a private events row is booked revenue (Definite events)."""
+    if status not in EVENT_STATUS_COUNTS:
+        raise UnmappedLabel(f"booking_status {status!r} is not mapped")
+    return record_type == "EVENT" and EVENT_STATUS_COUNTS[status]
+
+
+def private_event_revenue(df: pd.DataFrame) -> pd.DataFrame:
+    """Return countable events with their own money on their own date.
+
+    ``booking_grand_total`` repeats on every event row of a multi-day booking,
+    so it is never summed. Each event's ``grand_total`` lands on its
+    ``event_date`` (H9).
+    """
+    keep = [
+        is_countable_event(t, s)
+        for t, s in zip(df["record_type"], df["booking_status"], strict=True)
+    ]
+    events = df.loc[keep]
+    return pd.DataFrame(
+        {
+            "booking_id": events["booking_id"],
+            "event_date": events["event_date"].dt.date,
+            "revenue_cents": to_cents(events["grand_total"]),
+        }
+    )
