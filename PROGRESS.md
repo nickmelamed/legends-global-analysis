@@ -12,13 +12,13 @@ after compaction.
 - [x] Phase 2: write the Ancillary visual gap (D-008) and the RTL $1 rounding
   gap into docs/RECONCILIATION.md
 - [x] Phase 3: API with scope helper and restricted-user tests (budget 20 min)
+- [x] Phase 4: Overview page, screenshots at 390 and 1440, light and dark (budget 40 min)
+- [x] Switch `.claude/gate-commands` to `make agent-check`
 
 ## Next
 
-- [ ] Switch `.claude/gate-commands` to `make agent-check` once `web/` exists
 - [ ] Add `make numbers` to the gate once docs/WRITEUP.md exists
 - [ ] Enable the project-checks step in `.github/workflows/agent-checks.yml`
-- [ ] Phase 4: Overview page, screenshots at 390 and 1440, light and dark (about 40 min)
 - [ ] Phase 5: Ask the data, grounding check, evals (about 40 min)
 - [ ] Phase 6: draft docs for Nick to rewrite
 

@@ -151,3 +151,50 @@ Follow-up after review (same day): Nick asked for the items left open.
   `crosses_cutover`. A test also caught a future window printing "compared
   through None", which was fixed.
 - An `api-smoke` skill was drafted for Nick to approve. It is not installed.
+
+## Phase 4: Frontend Overview (2026-10-16 09:31 to 09:48)
+
+Asked: start the timer and plan Phase 4. In plan mode Nick chose Recharts
+over hand-rolled SVG and left docker-compose for Phase 6. Approving the
+plan approved the listed npm dependencies.
+
+Produced: `web/` (React 18, TypeScript strict, Vite, React Router,
+Recharts) with the shell, URL filters, the Overview and placeholder routes.
+There are 10 Playwright tests that run against the real database with
+APP_TODAY fixed, and four screenshots in docs/screenshots/. D-013 and D-014
+are new, along with docs/BACKLOG.md. `.claude/gate-commands` now runs
+`make agent-check`, which Nick approved, and `make ci` now passes its
+typecheck.
+
+Changed or rejected:
+- Claude added `@types/node` without asking. The Vite config needs it and
+  it was not in the approved list. The spec reviewer flagged it.
+- The first install pinned versions with open audit findings. Claude moved
+  to the newest patches that were at least two weeks old. Playwright
+  1.64.1 was rejected for being two days old. The rest is accepted in D-014.
+- The dataviz guidance says never to use a dual axis. The spec requires
+  one, so it was kept with separate marks and a table view (D-013).
+- The first 390 px screenshot stopped at the screen height, because the
+  page scrolled inside a fixed frame. Phones now scroll the page.
+
+The spec reviewer found these, and all were fixed with failing tests first:
+- A no-data day drew as an empty slot in the trend, which reads as a dip
+  (Rule 4). It is now a shaded "No data" column.
+- The no-data e2e test never checked "No data" or zero.
+- The Reset test only moved one filter.
+- Department rows with a gap had no marker.
+- A 403 left the freshness footer on "checking" forever.
+- Choosing Custom with no dates showed a 422 error.
+- A real zero comparison was labelled "data gap".
+
+To check the tests were not hollow, Claude broke two things and restored
+them. Dropping the query string from tab links failed the filters test.
+Rendering null as "0" failed both no-data tests. The style reviewer's two
+fixes and four trims were applied. Screenshots are written only when
+`SCREENSHOTS=1`, so test runs leave the tree clean.
+
+What went wrong: Claude declared the first 8/8 pass before any review, and
+two of those tests would have passed with the feature broken. The Rule 4
+gap in the chart was only caught by the reviewer's own screenshot.
+
+Time: 16.8 active minutes against a 40 minute budget.

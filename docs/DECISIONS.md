@@ -245,3 +245,43 @@ Consequences. RTL's week of 2026-04-13 shows total revenue and attendance
 with a gap flag and no delta. Labor, which has rows that day, keeps its
 delta. The spec reviewer found the original behaviour, and Nick has not yet
 ruled on it.
+
+## D-013: Per cap on a second axis in the revenue trend (2026-10-16)
+
+Context. The packet asks for the revenue trend with "per cap on a second
+axis". Dual-axis charts invite readers to compare two scales that have
+nothing to do with each other, which is why the charting guidance we follow
+warns against them.
+
+Decision. Keep the second axis, since the requirement is fixed. Each series
+gets its own mark so neither axis can be mistaken for the other. Revenue is
+gold bars on the left axis, the comparison revenue is a dashed gray line on
+the left axis, and per cap is a solid ink line with markers on the right
+axis. The legend names the axis for each series. A Table toggle shows the
+same values as text.
+
+Why. Gold on white has a contrast of 1.6:1, so the bars get a 1px ink
+outline, and the table and tooltip give the exact values.
+
+Consequences. A reviewer who dislikes dual axes can turn on the table. Two
+small charts sharing an x axis would be the alternative, if Legends agrees.
+
+## D-014: Dev-only npm audit findings are accepted (2026-10-16)
+
+Context. `npm audit` on `web/` reports moderate and high findings in Vite
+5.4.21 (esbuild dev-server requests, path traversal and fs.deny bypasses on
+Windows) and moderate ones in react-router 6.30.6 (SSR hydration, and
+open redirects through `<Link>` with backslash URLs). The audit's fix is
+Vite 8 and React Router 7, both major upgrades.
+
+Decision. Pin the newest patch of each major version that was out at
+least two weeks: react-router-dom 6.30.6, vite 5.4.21 and
+@playwright/test 1.63.0. 1.64.1 was two days old. Accept the rest.
+
+Why. The Vite findings affect only the dev server, which binds to
+localhost. The production build is static files. The app has no SSR and
+links only to its own routes. A major upgrade inside a 40 minute phase is
+riskier than these findings.
+
+Consequences. Move to Vite 6.4.3 or later and React Router 7 before the app
+serves anyone outside a laptop. Listed in docs/BACKLOG.md.

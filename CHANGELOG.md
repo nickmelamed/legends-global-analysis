@@ -37,6 +37,17 @@ Keep a Changelog, and versions follow Semantic Versioning.
 - Custom ranges are capped at 731 days. The export header shows days
   elapsed, the comparison's elapsed end and whether a window crosses the
   cutover.
+- `web/`: React, TypeScript and Vite Overview. It has the branded shell,
+  a sidebar that becomes a drawer on a phone, a route for every tab, and
+  URL filters with Reset. The page shows KPI and labor tiles with pace to
+  plan, revenue by department, a revenue trend with a dashed comparison and
+  per cap on the right axis, and a freshness footer. Missing days show as
+  "No data" or a gap marker, never zero.
+- Playwright tests for defaults, filters and Reset, missing data, the
+  restricted user and layout at 390 and 1440 px in both themes.
+  `npm --prefix web run screenshots` writes docs/screenshots/.
+- Decisions D-013 (dual axis on the trend) and D-014 (dev-only npm audit
+  findings), and docs/BACKLOG.md.
 
 ### Changed
 
