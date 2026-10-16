@@ -50,7 +50,6 @@ Keep a Changelog, and versions follow Semantic Versioning.
   findings), and docs/BACKLOG.md.
 - The window in API responses carries `cutover_date`. The phone drawer
   closes on Escape, and the Help link has an accessible name.
-- A `mutation-check` skill for proving tests fail when the behaviour breaks.
 
 ### Changed
 

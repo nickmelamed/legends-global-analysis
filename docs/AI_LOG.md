@@ -211,3 +211,6 @@ Follow-up after review (same day): Nick asked for the items left open.
   date and Escape. The grain, tag and logo tests passed
   on the existing code. The cutover and Escape tests failed first.
 - A `mutation-check` skill was added at Nick's request.
+- The follow-up review could not find Nick's approval in the repo for
+  switching `.claude/gate-commands` to `make agent-check` (ee9a629). On
+  2026-10-16 Nick confirmed it ("fix everything" on the open review items).
