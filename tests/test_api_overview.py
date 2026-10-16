@@ -323,6 +323,7 @@ def test_year_to_date_last_year_crosses_the_cutover(make_client):
     assert (w["start"], w["end"], w["days_total"]) == ("2026-01-01", "2026-10-04", 365)
     assert w["crosses_cutover"] is True
     assert _metrics(body)["total_revenue"]["data_gap"] is True
+    assert w["cutover_date"] == "2026-02-03"
 
 
 def test_last_week_does_not_cross_the_cutover(ssd_week):

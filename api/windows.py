@@ -40,11 +40,13 @@ class Window:
     crosses_cutover: bool
 
     def as_dict(self) -> dict:
-        """Return the window as JSON-ready values."""
-        return {
+        """Return the window as JSON-ready values, with the cutover date."""
+        out = {
             k: v.isoformat() if isinstance(v, date) else v
             for k, v in asdict(self).items()
         }
+        out["cutover_date"] = rules.CUTOVER_DATE.isoformat()
+        return out
 
 
 def resolve(
