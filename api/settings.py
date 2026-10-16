@@ -10,7 +10,7 @@ from pathlib import Path
 
 @dataclass(frozen=True)
 class Settings:
-    """What the API needs to know about its environment."""
+    """API settings, read once from the environment."""
 
     db_path: Path
     today: date

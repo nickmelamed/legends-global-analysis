@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from datetime import date
 
-from api.queries import FEEDS, Measures, TicketFilter, budget, measures
+from api.queries import EVENTS, Measures, TicketFilter, budget, measures
 from api.scope import Scope
 from api.windows import Window
 from pipeline import rules
@@ -19,7 +19,7 @@ DEPARTMENT_FEED = {
     "Restaurant": "pos",
     "Cafe": "pos",
     "Merchandise": "pos",
-    "Private Events": None,
+    "Private Events": EVENTS,
 }
 # Metrics the package class and sales channel filters change (D-010).
 TICKET_FILTERED = ["attendance", "ticket_revenue", "atp", "department:Ticket"]
@@ -59,27 +59,24 @@ def values(m: Measures) -> dict[str, float | None]:
         "payroll_pct": None if payroll_share is None else payroll_share * 100,
     }
     for dept in DEPARTMENTS:
-        out[f"department:{dept}"] = _dollars(m.department_cents[dept])
+        out[f"department:{dept}"] = _dollars(m.department_cents.get(dept))
     return out
 
 
 METRIC_FEEDS = {
-    "total_revenue": ("tickets", "pos"),
-    "per_cap": ("tickets", "pos"),
+    "total_revenue": ("tickets", "pos", EVENTS),
+    "per_cap": ("tickets", "pos", EVENTS),
     "attendance": ("tickets",),
     "ticket_revenue": ("tickets",),
     "atp": ("tickets",),
     "fnb_revenue": ("pos",),
     "merch_revenue": ("pos",),
-    "private_events_revenue": (),
+    "private_events_revenue": (EVENTS,),
     "payroll": ("labor",),
     "labor_hours": ("labor",),
     "guests_per_labor_hour": ("tickets", "labor"),
-    "payroll_pct": ("tickets", "pos", "labor"),
-} | {
-    f"department:{d}": (DEPARTMENT_FEED[d],) if DEPARTMENT_FEED[d] else ()
-    for d in DEPARTMENTS
-}
+    "payroll_pct": ("tickets", "pos", EVENTS, "labor"),
+} | {f"department:{d}": (DEPARTMENT_FEED[d],) for d in DEPARTMENTS}
 
 LABELS = {
     "total_revenue": ("Total revenue", "usd"),
@@ -97,7 +94,11 @@ LABELS = {
 } | {f"department:{d}": (d, "usd") for d in DEPARTMENTS}
 
 
-def _pace(actual: float | None, plan: float | None) -> dict | None:
+def _pace(actual: float | None, plan: float | None, gap: bool) -> dict | None:
+    """Return pace to plan, with no status over a data gap.
+
+    The actual misses days the budget includes, so a colour would mislead.
+    """
     if plan is None:
         return None
     share = rules.ratio(actual, plan)
@@ -106,7 +107,8 @@ def _pace(actual: float | None, plan: float | None) -> dict | None:
         "actual": actual,
         "budget": plan,
         "pct": pct,
-        "status": rules.pace_status(pct),
+        "status": None if gap else rules.pace_status(pct),
+        "data_gap": gap,
     }
 
 
@@ -146,41 +148,48 @@ def _gap_rows(scope: Scope, start: date, end: date) -> list[dict]:
 
 def build(scope: Scope, window: Window, tf: TicketFilter) -> dict:
     """Return the Overview response for the scoped venues and window."""
-    current = measures(scope, window.start, window.end, tf)
+    # Actuals stop at yesterday, so presales and booked future events never
+    # count. The comparison covers the same number of days.
+    current = (
+        measures(scope, window.start, window.elapsed_end, tf)
+        if window.elapsed_end
+        else Measures()
+    )
     cur = values(current)
+    cur_gaps = current.feed_gaps
     cmp: dict = {}
-    if window.comparison_start:
-        cmp = values(
-            measures(scope, window.comparison_start, window.comparison_end, tf)
+    cmp_gaps: dict[str, int] = {}
+    if window.comparison_start and window.comparison_elapsed_end:
+        compared = measures(
+            scope, window.comparison_start, window.comparison_elapsed_end, tf
         )
+        cmp, cmp_gaps = values(compared), compared.feed_gaps
     plans: dict = {}
-    elapsed_vals: dict = {}
-    gaps: dict[str, int] = dict.fromkeys(FEEDS, 0)
     gap_rows: list[dict] = []
     if window.elapsed_end:
-        elapsed = (
-            current
-            if window.elapsed_end == window.end
-            else measures(scope, window.start, window.elapsed_end, tf)
-        )
-        elapsed_vals = values(elapsed)
-        gaps = elapsed.feed_gaps
         plans = _plans(budget(scope, window.start, window.elapsed_end), tf)
         gap_rows = _gap_rows(scope, window.start, window.elapsed_end)
 
     def metric(key: str) -> dict:
         label, unit = LABELS[key]
+        # A delta over missing days would read as a real change, so it is
+        # left out when either side has a gap.
+        gap = any(cur_gaps.get(f, 0) for f in METRIC_FEEDS[key])
+        cmp_gap = any(cmp_gaps.get(f, 0) for f in METRIC_FEEDS[key])
         out = {
             "key": key,
             "label": label,
             "unit": unit,
             "current": cur[key],
             "comparison": cmp.get(key),
-            "delta_pct": rules.pct_change(cur[key], cmp.get(key)),
+            "delta_pct": None
+            if gap or cmp_gap
+            else rules.pct_change(cur[key], cmp.get(key)),
             "cost": key in COST_METRICS,
             "ticket_filtered": tf.active and key in TICKET_FILTERED,
-            "data_gap": any(gaps[f] for f in METRIC_FEEDS[key]),
-            "pace": _pace(elapsed_vals.get(key), plans.get(key)),
+            "data_gap": gap,
+            "comparison_data_gap": cmp_gap,
+            "pace": _pace(cur[key], plans.get(key), gap),
         }
         if key in ("payroll", "payroll_pct"):
             out["incomplete"] = (
@@ -215,5 +224,6 @@ def build(scope: Scope, window: Window, tf: TicketFilter) -> dict:
             for k in ("atp", "fnb_revenue", "merch_revenue", "private_events_revenue")
         ],
         "data_gaps": gap_rows,
-        "feed_gap_days": gaps,
+        "feed_gap_days": cur_gaps,
+        "comparison_feed_gap_days": cmp_gaps,
     }

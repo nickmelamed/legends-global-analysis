@@ -2,9 +2,11 @@
 
 Two venues, 2026-09-21 to 2026-10-04. Every SSD day has 10 guests ($280 of
 tickets: 8 Web at $30, 2 Group at $20), $110 of POS (Restaurant $50, Bar $10,
-Cafe $20, Gift Shop $30), 10 labor hours and $200 payroll. SSD has a $500
-private event on 2026-10-02 and a missing-rate shift on 2026-09-30. RTL is the
-same for tickets and POS but has no rows on 2026-10-01, a missing feed.
+Cafe $20, Gift Shop $30), 10 labor hours and $200 payroll. Each venue-day is
+budgeted at $410 ($300 Ticket) and 10 guests. SSD also has a $500 private event
+on 2026-10-02 and a missing-rate shift on 2026-09-30. RTL matches SSD
+otherwise, but has no ticket or POS rows on 2026-10-01. Past the last loaded
+day, SSD has presales for 2026-10-10 and a booked event on 2026-10-20.
 """
 
 from datetime import date, timedelta
@@ -24,7 +26,7 @@ DAYS = [FIRST + timedelta(days=i) for i in range((LAST - FIRST).days + 1)]
 VENUES = ["SSD", "RTL"]
 
 
-def _tables() -> dict[str, pd.DataFrame]:
+def tables() -> dict[str, pd.DataFrame]:
     tickets, pos, labor, coverage, budget = [], [], [], [], []
     for v in VENUES:
         for d in DAYS:
@@ -64,6 +66,7 @@ def _tables() -> dict[str, pd.DataFrame]:
                 ("Private Events", 0, None),
             ):
                 budget.append((v, d, dept, guests, cents))
+    tickets.append(("SSD", date(2026, 10, 10), "INDIVIDUAL", "Web", 5, 15000, 5))
     return {
         "dim_venue": pd.DataFrame(
             [("SSD", "Summit Sky Deck"), ("RTL", "Riverbend Tower Lookout")],
@@ -118,7 +121,10 @@ def _tables() -> dict[str, pd.DataFrame]:
             ],
         ),
         "daily_private_events": pd.DataFrame(
-            [("SSD", date(2026, 10, 2), 50000, 1, 1)],
+            [
+                ("SSD", date(2026, 10, 2), 50000, 1, 1),
+                ("SSD", date(2026, 10, 20), 90000, 1, 1),
+            ],
             columns=["venue_code", "event_date", "revenue_cents", "events", "bookings"],
         ),
         "budget_daily": pd.DataFrame(
@@ -141,11 +147,9 @@ def _tables() -> dict[str, pd.DataFrame]:
     }
 
 
-@pytest.fixture(scope="session")
-def api_db(tmp_path_factory):
-    path = tmp_path_factory.mktemp("api") / "api.duckdb"
+def write_db(path, frames: dict[str, pd.DataFrame]):
     con = duckdb.connect(str(path))
-    for name, frame in _tables().items():
+    for name, frame in frames.items():
         con.register("frame", frame)
         con.execute(f"CREATE TABLE {name} AS SELECT * FROM frame")
         con.unregister("frame")
@@ -153,11 +157,20 @@ def api_db(tmp_path_factory):
     return path
 
 
+@pytest.fixture(scope="session")
+def api_db(tmp_path_factory):
+    return write_db(tmp_path_factory.mktemp("api") / "api.duckdb", tables())
+
+
+def client_for(db_path, user: str | None = "nick@dev", today=date(2026, 10, 5)):
+    app = create_app(Settings(db_path=db_path, today=today, dev_user=None))
+    headers = {"X-Dev-User": user} if user else {}
+    return TestClient(app, headers=headers)
+
+
 @pytest.fixture
 def make_client(api_db):
     def make(user: str | None = "nick@dev", today: date = date(2026, 10, 5)):
-        app = create_app(Settings(db_path=api_db, today=today, dev_user=None))
-        headers = {"X-Dev-User": user} if user else {}
-        return TestClient(app, headers=headers)
+        return client_for(api_db, user, today)
 
     return make

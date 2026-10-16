@@ -148,7 +148,6 @@ def test_compare_off_and_last_year(make_client):
         "2025-09-29",
         "2025-10-05",
     )
-    # No data that far back: comparison is None, not 0.
     body = c.get("/api/overview", params={"compare_mode": "last_year"}).json()
     assert _metrics(body)["attendance"]["comparison"] is None
 
@@ -207,7 +206,7 @@ def test_freshness(make_client):
     assert make_client().get("/api/freshness").json()["stale"] is False
     stale = make_client(today=date(2026, 10, 9)).get("/api/freshness").json()
     assert stale["stale"] is True
-    assert stale["stale_feeds"] == ["labor", "pos", "tickets"]
+    assert {f["feed"] for f in stale["stale_feeds"]} == {"labor", "pos", "tickets"}
 
 
 def test_export_carries_filters_and_time(make_client):
@@ -223,4 +222,159 @@ def test_export_carries_filters_and_time(make_client):
     assert "# window: 2026-09-28 to 2026-10-04" in lines
     assert "# comparison: off" in lines
     assert "# package_class: GROUP" in lines
-    assert "kpis,Attendance,count,14,no data,no data,no data,False,False" in lines
+    assert "kpis,Attendance,count,14,no data,no data,no plan,False,False,False" in lines
+
+
+def test_custom_range_past_yesterday_counts_only_elapsed_days(make_client):
+    body = (
+        make_client()
+        .get("/api/overview", params={"start": "2026-09-28", "end": "2026-10-31"})
+        .json()
+    )
+    m = _metrics(body)
+    # The 2026-10-10 presales and the 2026-10-20 booking are not actuals yet.
+    assert m["attendance"]["current"] == 70
+    assert m["total_revenue"]["current"] == 3230.0
+    assert m["private_events_revenue"]["current"] == 500.0
+    w = body["window"]
+    assert (w["days_elapsed"], w["elapsed_end"]) == (7, "2026-10-04")
+    # The comparison covers the same 7 elapsed days.
+    assert (w["comparison_start"], w["comparison_elapsed_end"]) == (
+        "2026-08-25",
+        "2026-08-31",
+    )
+
+
+def test_window_entirely_in_the_future_has_no_actuals(make_client):
+    body = (
+        make_client()
+        .get("/api/overview", params={"start": "2026-10-19", "end": "2026-10-25"})
+        .json()
+    )
+    m = _metrics(body)
+    for key in ("private_events_revenue", "department:Private Events", "attendance"):
+        assert m[key]["current"] is None
+
+
+def test_private_events_before_the_data_starts_are_no_data(make_client):
+    body = (
+        make_client().get("/api/overview", params={"compare_mode": "last_year"}).json()
+    )
+    m = _metrics(body)
+    assert m["private_events_revenue"]["comparison"] is None
+    assert m["department:Private Events"]["comparison"] is None
+
+
+def test_comparison_with_missing_days_is_flagged_and_has_no_delta(make_client):
+    # The prior period, 2026-09-19 to 2026-09-23, starts before the data.
+    body = (
+        make_client()
+        .get("/api/overview", params={"start": "2026-09-24", "end": "2026-09-28"})
+        .json()
+    )
+    m = _metrics(body)
+    assert m["attendance"]["comparison"] == 30
+    assert m["attendance"]["comparison_data_gap"] is True
+    assert m["attendance"]["delta_pct"] is None
+    assert m["total_revenue"]["comparison_data_gap"] is True
+    assert m["labor_hours"]["comparison_data_gap"] is True
+
+
+def test_current_gap_also_removes_the_delta(make_client):
+    m = _metrics(make_client().get("/api/overview", params={"venue": "RTL"}).json())
+    assert m["attendance"]["data_gap"] is True
+    assert m["attendance"]["delta_pct"] is None
+    assert m["labor_hours"]["delta_pct"] is not None
+
+
+def test_pace_has_no_status_over_a_gap(make_client):
+    m = _metrics(make_client().get("/api/overview", params={"venue": "RTL"}).json())
+    pace = m["attendance"]["pace"]
+    assert pace["pct"] == pytest.approx(60 / 70 * 100)
+    assert pace["data_gap"] is True
+    assert pace["status"] is None
+
+
+def test_both_ticket_filters_and_across_or_within(make_client):
+    c = make_client()
+
+    def attendance(params):
+        return _metrics(c.get("/api/overview", params=params).json())["attendance"][
+            "current"
+        ]
+
+    assert attendance({"package_class": "INDIVIDUAL", "sales_channel": "Web"}) == 56
+    assert attendance({"package_class": "INDIVIDUAL", "sales_channel": "Group"}) == 0
+    assert attendance({"package_class": ["INDIVIDUAL", "GROUP"]}) == 70
+
+
+def test_year_to_date_last_year_crosses_the_cutover(make_client):
+    body = (
+        make_client()
+        .get(
+            "/api/overview",
+            params={"preset": "year_to_date", "compare_mode": "last_year"},
+        )
+        .json()
+    )
+    w = body["window"]
+    assert (w["start"], w["end"], w["days_total"]) == ("2026-01-01", "2026-10-04", 365)
+    assert w["crosses_cutover"] is True
+    assert _metrics(body)["total_revenue"]["data_gap"] is True
+
+
+def test_last_week_does_not_cross_the_cutover(ssd_week):
+    assert ssd_week["window"]["crosses_cutover"] is False
+
+
+def test_preset_with_dates_is_rejected(make_client):
+    r = make_client().get(
+        "/api/overview", params={"preset": "last_week", "start": "2026-09-01"}
+    )
+    assert r.status_code == 422
+
+
+def test_trend_comparison_is_bucketed_on_the_current_days(make_client):
+    body = (
+        make_client()
+        .get(
+            "/api/trend",
+            params={"start": "2026-09-30", "end": "2026-10-04", "grain": "week"},
+        )
+        .json()
+    )
+    [current] = body["current"]
+    [comparison] = body["comparison"]
+    assert current["bucket_start"] == comparison["bucket_start"] == "2026-09-28"
+    assert current["revenue"] == 5 * 390.0 + 500
+    assert comparison["revenue"] == 5 * 390.0
+    assert (comparison["first_day"], comparison["last_day"]) == (
+        "2026-09-25",
+        "2026-09-29",
+    )
+    assert current["partial"] is True
+    assert current["days"] == 5
+
+
+def test_trend_full_week_is_not_partial(make_client):
+    [week] = make_client().get("/api/trend", params={"grain": "week"}).json()["current"]
+    assert (week["partial"], week["days"]) == (False, 7)
+
+
+def test_freshness_flags_one_stale_venue_among_several(tmp_path):
+    from conftest import client_for, tables, write_db
+
+    frames = tables()
+    cov = frames["feed_coverage"]
+    late = (
+        (cov.venue_code == "RTL")
+        & (cov.feed == "tickets")
+        & (cov.business_date > date(2026, 10, 2))
+    )
+    frames["feed_coverage"] = cov[~late]
+    client = client_for(write_db(tmp_path / "stale.duckdb", frames))
+    body = client.get("/api/freshness", params={"venue": ["SSD", "RTL"]}).json()
+    assert body["stale"] is True
+    assert body["stale_feeds"] == [{"venue": "RTL", "feed": "tickets"}]
+    assert body["latest_day"]["RTL"]["tickets"] == "2026-10-02"
+    assert body["latest_day"]["SSD"]["tickets"] == "2026-10-04"

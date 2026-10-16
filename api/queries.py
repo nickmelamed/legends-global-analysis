@@ -12,11 +12,15 @@ from datetime import date
 from api.scope import Scope
 
 FEEDS = ("tickets", "pos", "labor")
+# Private events have no feed of their own. A day counts as loaded for them
+# when any feed covers the venue that day, so dates before the data starts or
+# after yesterday are no data rather than $0.
+EVENTS = "events"
 
 
 @dataclass(frozen=True)
 class TicketFilter:
-    """Package class and sales channel filters. They apply to ticket metrics."""
+    """Package class and channel filters, applied to ticket metrics only (D-010)."""
 
     package_classes: tuple[str, ...] = ()
     sales_channels: tuple[str, ...] = ()
@@ -52,7 +56,7 @@ class Measures:
     department_cents: dict[str, int | None] = field(default_factory=dict)
     fnb_cents: int | None = None
     merch_cents: int | None = None
-    events_cents: int = 0
+    events_cents: int | None = None
     hours: float | None = None
     payroll_cents: int | None = None
     missing_rate_shifts: int = 0
@@ -95,6 +99,10 @@ SELECT feed, count(*) FILTER (WHERE status = 'ok') AS ok_days
 FROM feed_coverage
 WHERE venue_code IN {venues} AND business_date BETWEEN $start AND $end
 GROUP BY feed
+UNION ALL
+SELECT 'events', count(DISTINCT (venue_code, business_date))
+FROM feed_coverage
+WHERE venue_code IN {venues} AND business_date BETWEEN $start AND $end
 """
 
 
@@ -111,8 +119,8 @@ def measures(scope: Scope, start: date, end: date, tf: TicketFilter) -> Measures
     ok = dict(scope.query(COVERAGE_SQL, {"start": start, "end": end}).fetchall())
     expected = ((end - start).days + 1) * len(scope.venues)
     m = Measures()
-    m.feed_days = {f: int(ok.get(f, 0)) for f in FEEDS}
-    m.feed_gaps = {f: expected - m.feed_days[f] for f in FEEDS}
+    m.feed_days = {f: int(ok.get(f, 0)) for f in (*FEEDS, EVENTS)}
+    m.feed_gaps = {f: expected - n for f, n in m.feed_days.items()}
 
     def val(name: str, feed: str, cast=int):
         if m.feed_days[feed] == 0:
@@ -125,7 +133,7 @@ def measures(scope: Scope, start: date, end: date, tf: TicketFilter) -> Measures
     m.ticket_cents = val("tix", "tickets")
     m.fnb_cents = val("fnb", "pos")
     m.merch_cents = val("merch", "pos")
-    m.events_cents = int(row["events"])
+    m.events_cents = val("events", EVENTS)
     m.department_cents = {
         "Ticket": m.ticket_cents,
         "Restaurant": val("restaurant", "pos"),
@@ -197,8 +205,7 @@ ORDER BY days.d
 def daily_revenue(scope: Scope, start: date, end: date) -> list[dict]:
     """Return total revenue and attendance per day, unfiltered.
 
-    A day where any scoped venue lacks ticket or POS rows is no data: its
-    values are None.
+    A day where any scoped venue lacks ticket or POS rows has None values.
     """
     rows = scope.query(DAILY_SQL, {"start": start, "end": end}).fetchall()
     need = 2 * len(scope.venues)

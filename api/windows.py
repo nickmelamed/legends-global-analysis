@@ -7,7 +7,7 @@ carries the result, so the UI never recomputes dates.
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from datetime import date, timedelta
+from datetime import date
 from typing import Literal
 
 from fastapi import HTTPException
@@ -36,6 +36,7 @@ class Window:
     compare_mode: CompareMode | None
     comparison_start: date | None
     comparison_end: date | None
+    comparison_elapsed_end: date | None
     crosses_cutover: bool
 
     def as_dict(self) -> dict:
@@ -56,8 +57,9 @@ def resolve(
 ) -> Window:
     """Return the window for a preset, or for ``start`` to ``end`` if custom.
 
-    Days elapsed run up to yesterday, the last complete business day. Pace
-    compares actual and budget over the elapsed days only.
+    Days elapsed run up to yesterday, the last complete business day. Actuals,
+    pace and the comparison cover those days only, and the comparison's
+    elapsed part is the same number of days from its own start.
     """
     if preset == "custom":
         if start is None or end is None:
@@ -67,16 +69,13 @@ def resolve(
         days_total = (end - start).days + 1
     else:
         start, end, days_total = PRESETS[preset](today)
-    last_complete = today - timedelta(days=1)
-    elapsed_end = min(end, last_complete) if start <= last_complete else None
+    elapsed_end = rules.elapsed_end(start, end, today)
     days_elapsed = (elapsed_end - start).days + 1 if elapsed_end else 0
-    cmp_start = cmp_end = None
+    cmp_start = cmp_end = cmp_elapsed_end = None
     if compare:
         compare_fn = rules.prior_period if mode == "prior_period" else rules.last_year
         cmp_start, cmp_end = compare_fn(start, end)
-    crosses = rules.crosses_cutover(start, end) or (
-        cmp_start is not None and rules.crosses_cutover(cmp_start, cmp_end)
-    )
+        cmp_elapsed_end = rules.comparison_elapsed_end(start, elapsed_end, cmp_start)
     return Window(
         start=start,
         end=end,
@@ -86,5 +85,8 @@ def resolve(
         compare_mode=mode if compare else None,
         comparison_start=cmp_start,
         comparison_end=cmp_end,
-        crosses_cutover=crosses,
+        comparison_elapsed_end=cmp_elapsed_end,
+        crosses_cutover=rules.comparison_crosses_cutover(
+            start, end, cmp_start, cmp_end
+        ),
     )

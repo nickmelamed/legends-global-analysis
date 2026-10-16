@@ -9,7 +9,7 @@ from __future__ import annotations
 import csv
 import io
 from collections.abc import Iterator
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime
 from typing import Annotated
 
 import duckdb
@@ -18,10 +18,11 @@ from fastapi.responses import Response
 
 from api import overview, trend
 from api.auth import load_user, signed_in_email
-from api.queries import TicketFilter
+from api.queries import FEEDS, TicketFilter
 from api.scope import Scope, scoped_venues
 from api.settings import Settings
 from api.windows import CompareMode, Preset, Window, resolve
+from pipeline import rules
 
 
 def get_con(request: Request) -> Iterator[duckdb.DuckDBPyConnection]:
@@ -54,6 +55,8 @@ def get_window(
     """Resolve the date filters. A start and end with no preset is custom."""
     if preset is None:
         preset = "custom" if start or end else "last_week"
+    elif preset != "custom" and (start or end):
+        raise HTTPException(422, "start and end need preset=custom")
     today = request.app.state.settings.today
     return resolve(preset, start, end, compare, compare_mode, today)
 
@@ -91,7 +94,7 @@ FilterDep = Annotated[TicketFilter, Depends(get_ticket_filter)]
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
-    """Build the app. Tests pass their own settings."""
+    """Build the app from ``settings``, or from the environment if None."""
     app = FastAPI(title="Attractions API")
     app.state.settings = settings or Settings.from_env()
 
@@ -134,24 +137,31 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         run = scope.con.execute(
             "SELECT run_id, finished_at FROM load_runs ORDER BY finished_at DESC"
         ).fetchone()
-        latest = dict(
-            scope.query(
-                "SELECT feed, max(business_date) FROM feed_coverage "
-                "WHERE venue_code IN {venues} AND status = 'ok' GROUP BY feed"
-            ).fetchall()
-        )
-        expected = today - timedelta(days=1)
-        stale_feeds = sorted(
-            f
-            for f in ("tickets", "pos", "labor")
-            if (latest.get(f) or date.min) < expected
-        )
+        rows = scope.query(
+            "SELECT venue_code, feed, max(business_date) FROM feed_coverage "
+            "WHERE venue_code IN {venues} AND status = 'ok' GROUP BY ALL"
+        ).fetchall()
+        latest = {v: {} for v in scope.venues}
+        for venue, feed, day in rows:
+            latest[venue][feed] = day
+        # Each venue and feed is checked on its own, so one current venue
+        # cannot hide a stale one.
+        expected = rules.last_complete_day(today)
+        stale_feeds = [
+            {"venue": v, "feed": f}
+            for v in scope.venues
+            for f in FEEDS
+            if (latest[v].get(f) or date.min) < expected
+        ]
         return {
             "venues": list(scope.venues),
             "app_today": today.isoformat(),
             "last_load_run": run[0] if run else None,
             "last_load_finished_at": run[1].isoformat() if run else None,
-            "latest_day": {f: d.isoformat() for f, d in latest.items()},
+            "latest_day": {
+                v: {f: d.isoformat() for f, d in feeds.items()}
+                for v, feeds in latest.items()
+            },
             "expected_latest_day": expected.isoformat(),
             "stale": bool(stale_feeds) or run is None,
             "stale_feeds": stale_feeds,
@@ -192,12 +202,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "delta_pct",
                 "pace_pct",
                 "data_gap",
+                "comparison_data_gap",
                 "incomplete",
             ]
         )
         for section in ("kpis", "labor", "departments", "revenue_lines"):
             for m in data[section]:
-                pace = m["pace"] or {}
                 out.writerow(
                     [
                         section,
@@ -206,8 +216,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                         _cell(m["current"]),
                         _cell(m["comparison"]),
                         _cell(m["delta_pct"]),
-                        _cell(pace.get("pct")),
+                        "no plan" if m["pace"] is None else _cell(m["pace"]["pct"]),
                         m["data_gap"],
+                        m["comparison_data_gap"],
                         bool(m.get("incomplete")),
                     ]
                 )

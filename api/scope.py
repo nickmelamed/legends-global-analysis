@@ -45,7 +45,8 @@ def scoped_venues(user: User, requested: list[str] | None) -> tuple[str, ...]:
 
     Raises 403 if any requested venue is outside the user's scope, including
     venues that do not exist, so the response never reveals which do. With no
-    venue requested, Summit if the user has it, else the user's first venue.
+    venue requested, return SSD if the user has it, else the user's first
+    venue.
     """
     if not user.venues:
         raise HTTPException(status_code=403, detail="no venues in scope")
