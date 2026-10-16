@@ -1,0 +1,32 @@
+# docker compose up: load the workbooks into build/attractions.duckdb, then
+# serve the api and the web app at http://localhost:8080.
+# Settings come from .env.example, overridden by .env when it exists.
+
+x-env: &env
+  env_file:
+    - path: .env.example
+    - path: .env
+      required: false
+
+services:
+  load:
+    build: { context: ., dockerfile: docker/api.Dockerfile }
+    <<: *env
+    command: ["python", "-m", "pipeline.load"]
+    volumes:
+      - ./data:/app/data:ro
+      - ./build:/app/build
+
+  api:
+    build: { context: ., dockerfile: docker/api.Dockerfile }
+    <<: *env
+    depends_on:
+      load: { condition: service_completed_successfully }
+    volumes:
+      - ./build:/app/build:ro
+    ports: ["8000:8000"]
+
+  web:
+    build: { context: ., dockerfile: docker/web.Dockerfile }
+    depends_on: [api]
+    ports: ["8080:80"]

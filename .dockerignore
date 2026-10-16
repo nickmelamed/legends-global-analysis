@@ -1,0 +1,12 @@
+# Secrets and local state never enter an image.
+.env
+.env.*
+.git
+build
+data
+packet
+**/node_modules
+**/__pycache__
+web/dist
+web/test-results
+*.egg-info
