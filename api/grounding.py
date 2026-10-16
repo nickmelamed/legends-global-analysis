@@ -1,10 +1,15 @@
 """Check that every figure in a model reply comes from the tool outputs.
 
 A number in the reply is grounded when some numeric value in the tool outputs
-rounds to it at the precision the reply uses, with or without its sign
-("fell 8.2%" for -8.23). A date is grounded when the tool outputs contain it,
-and the years of those dates count as numbers. Abbreviated amounts such as
-"$84.3K" never pass, since they cannot be checked to the dollar.
+rounds to it at the precision the reply uses. An unsigned number may match
+either sign ("fell 8.2%" for -8.23). A signed one must match its sign. A date
+is grounded when the tool outputs contain it, and the years of those dates
+count as numbers. Abbreviated amounts such as "$84.3K" and number words such
+as "twelve" or "a third" never pass, since they cannot be checked.
+
+The check is on values, not on which metric a value belongs to. "Attendance
+was 91,891" passes if 91,891 is any value in the outputs, and the words
+around a number ("rose", "fell") are not checked (D-015).
 """
 
 from __future__ import annotations
@@ -23,14 +28,24 @@ MONTHS = {
     )
 }
 ISO_DATE = re.compile(r"\b(\d{4})-(\d{2})-(\d{2})\b")
+# Capitalised month names only, so "may 5" in prose is a number, not a date.
 NAMED_DATE = re.compile(
-    r"\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+"
-    r"(\d{1,2})(?:st|nd|rd|th)?\b(?:,?\s+(\d{4})\b)?",
-    re.IGNORECASE,
+    r"\b(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|June?|July?"
+    r"|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)"
+    r"\b\.?\s+(\d{1,2})(?:st|nd|rd|th)?\b(?:,?\s+(\d{4})\b)?"
 )
 NUMBER = re.compile(
-    r"(?<![\w.])[-+−]?\$?[-+−]?(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?"
+    r"(?<![\w.])[-+−]?\$?[-+−]?"
+    r"(?:(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?|\.\d+)"
     r"(?:%|[kKmMbB]\b|\s(?:thousand|million|billion|bn)\b)?"
+)
+# "one" is left out because it is too common in prose to reject.
+NUMBER_WORD = re.compile(
+    r"\b(two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|"
+    r"(?:thir|four|fif|six|seven|eigh|nine)teen|"
+    r"(?:twen|thir|for|fif|six|seven|eigh|nine)ty|hundred|thousand|million|"
+    r"billion|dozen|half|third|quarter|double|twice|triple)\b",
+    re.IGNORECASE,
 )
 ABBREVIATED = re.compile(r"([kKmMbB]|thousand|million|billion|bn)$")
 
@@ -78,10 +93,13 @@ def figure_ok(token: str, numbers: Iterable[float]) -> bool:
     if ABBREVIATED.search(token):
         return False
     raw = token.replace("−", "-").replace("$", "").replace(",", "").rstrip("%")
-    target = Decimal(raw.replace("+", ""))
+    signed = raw[0] in "+-"
+    target = Decimal(raw)
     places = len(raw.split(".")[1]) if "." in raw else 0
     return any(
-        target in _rounded(v, places) | _rounded(abs(v), places) for v in numbers
+        target in _rounded(v, places)
+        or (not signed and target in _rounded(abs(v), places))
+        for v in numbers
     )
 
 
@@ -114,4 +132,5 @@ def check(reply: str, tool_outputs: list) -> Grounding:
 
     text = NAMED_DATE.sub(named, ISO_DATE.sub(iso, reply))
     bad += [t for t in figures(text) if not figure_ok(t, numbers)]
+    bad += [m[0] for m in NUMBER_WORD.finditer(text)]
     return Grounding(ok=not bad, ungrounded=bad)

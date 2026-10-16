@@ -34,6 +34,10 @@ TOOL_OUTPUT = [
         "Last week ran from 2026-09-28 to 2026-10-04.",
         "Last week ran from Sep 28 to October 4, 2026, against 2025.",
         "I don't know. The data has no competitor prices.",
+        "Total revenue declined 8.2% against last year.",
+        "Total revenue decreased 8.23% to $84,328.25.",
+        "Revenue may rise next week. Last week it was $84,328.25.",
+        "Revenue changed by -8.23%, a fall of 8.23%.",
     ],
 )
 def test_grounded_replies_pass(reply):
@@ -52,6 +56,11 @@ def test_grounded_replies_pass(reply):
         ("Last week ran from 2026-09-21.", "2026-09-21"),
         ("Last week ran from Sep 21.", "Sep 21"),
         ("Revenue was down 9%.", "9%"),
+        ("Revenue fell by .5%.", ".5%"),
+        ("Revenue changed by +8.23%.", "+8.23%"),
+        ("Separately 28 guests complained.", "28"),
+        ("Revenue was twelve thousand dollars higher.", "twelve"),
+        ("Revenue was about a third more than plan.", "third"),
     ],
 )
 def test_ungrounded_figures_are_named(reply, bad):
