@@ -285,3 +285,61 @@ riskier than these findings.
 
 Consequences. Move to Vite 6.4.3 or later and React Router 7 before the app
 serves anyone outside a laptop. Listed in docs/BACKLOG.md.
+
+## D-015: Ask the data checks every figure and falls back to a table (2026-10-16)
+
+Context. Part C asks for answers whose numbers match the dashboard, scope
+that holds, safe handling of free text and a plan for model failure. SPEC
+section 5 names a `resolve_window(text)` tool.
+
+Decision. `POST /api/ask` runs a tool loop of at most four turns. The tools
+(`resolve_window`, `get_kpis`, `get_department_revenue`, `get_labor`) call
+`windows.resolve` and `overview.build`, the same code as the Overview page,
+and return an allowlist of fields rounded for display. Each tool takes an
+enum period (`last_week`, `month_to_date`, `year_to_date`, `custom` with
+dates) and an enum comparison, not free text. None takes a venue. The
+venues are the request's scope. Before any model call, a question that
+names a venue outside the user's scope gets a 403, and one that names an
+unselected venue gets a fixed reply asking the user to change the filter.
+`api/grounding.py` then checks every number and date in the reply against
+the tool outputs, at the precision the reply uses. A reply with any figure
+not in the outputs, a model error, a refusal or a missing recording returns
+the tool results as a table instead.
+
+Why. With an enum the model cannot invent a period, and the dates come from
+`pipeline.rules`. A strict check is easy to explain and to test. It rejects
+a correct sum the model worked out itself, so the tools return the change
+and percent change ready-made. The data holds no guest or free-text fields
+(D-009), so the only untrusted text that reaches the model is the
+question, and the question cannot widen scope because no tool accepts a
+venue.
+
+Consequences. Abbreviated amounts ("$84K") are always rejected. Questions
+the tools cannot express, such as by-hour or by-channel splits, get "I
+don't know" or the table. Adding a tool means adding its output fields to
+the allowlist and a test that no forbidden field appears.
+
+## D-016: Opus 5.5 with recorded replies by default (2026-10-16)
+
+Context. Reviewers may have no API key. Live calls cost money and vary from
+run to run.
+
+Decision. `ASK_CLIENT=recorded` is the default. It replays
+`evals/recordings/`, keyed by a hash of the question and the selected
+venues. `ASK_CLIENT=anthropic` calls `claude-opus-5-5` at low effort, and
+`make evals RECORD=1` writes new recordings with Nick's key. Tool calls in a
+recording are run again on the current database, so a change in the data
+shows up as a grounding failure, not as a stale answer. The e2e tests use a
+hand-written fixture recording in `web/e2e/recordings/`, marked as a
+fixture, to test the replay path. The installed SDK (0.105) has no
+server-side refusal fallback parameter, so a refusal goes to the table
+fallback.
+
+Why. Nick chose Opus 5.5 for its judgment on the refusal and injection
+cases. At $4 and $20 per million input and output tokens (pricing page read
+2026-10-16), a question with two or three turns is several cents. The eval
+report gives the measured figure.
+
+Consequences. An unrecorded question with the default client always gets
+the table. Re-record after changing the system prompt, the tools or the
+cases.
