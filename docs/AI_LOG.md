@@ -345,3 +345,14 @@ the reconciliation when the real-data test always skips there, that
 that the overtime flag needs per-person data the database leaves out
 (D-009). All were corrected in the docs. The `missing_day` line no longer
 reads as a planned edit to cases.yaml.
+
+Wrap-up (same day): Nick asked for the reviewer's optional items, the skill
+and a push, and accepted the draft lengths. `load` now reuses the image
+`api` builds and gets only `APP_TODAY`, and a clean rebuild confirmed it
+sees no API key variables while Summit's week still matched and Marcus got
+a 403. The first try printed a failed registry pull for the shared image,
+fixed with `pull_policy: never`. The write-up now says where the database
+lives in Azure and how a bad load is rolled back. `scripts/packet_text.py`
+and the `packet-text` skill replace the ad hoc HTML extraction. The guard
+hook blocked one shell command because it named the secrets file, so that
+edit went through the Edit tool.

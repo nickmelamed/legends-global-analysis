@@ -24,3 +24,4 @@ Active minutes count only time between a start and the next pause.
 | pause | 2026-10-16 15:23:48 | 134.0 |  |
 | start | 2026-10-16 15:25:02 | 134.0 |  |
 | mark | 2026-10-16 15:35:54 | 144.9 | end of Phase 6 |
+| pause | 2026-10-16 15:49:06 | 158.1 |  |
