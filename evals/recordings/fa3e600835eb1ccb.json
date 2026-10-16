@@ -1,0 +1,49 @@
+{
+  "question": "How productive was labor last week?",
+  "model": "claude-opus-5-5",
+  "turns": [
+    {
+      "content": [
+        {
+          "id": "toolu_01XxZs5GMsQWnqYC8ZuLpHWL",
+          "caller": {
+            "type": "direct"
+          },
+          "input": {
+            "period": "last_week",
+            "start": null,
+            "end": null,
+            "compare": "prior_period"
+          },
+          "name": "get_labor",
+          "type": "tool_use"
+        }
+      ],
+      "stop_reason": "tool_use",
+      "usage": {
+        "input_tokens": 1787,
+        "output_tokens": 117
+      },
+      "model": "claude-opus-5-5"
+    },
+    {
+      "content": [
+        {
+          "signature": "CAQSkgUKEAgSGAI4AUIIdGhpbmtpbmcSDD4rv71HnWnfzCd7sRoMz4bNrAVVkQKqGAE5IjC/4gAMk/5Q27/JFUMSh60vamdehUIzbuHFEIc1d36Ok/+w44c12N2OIMbS9IvHGKIqrwRdrSHhvEsktT6uhTIY3hUaJYgTgUwW8zuX3hA3vXigxpTdn8H0ECuXdHtWEqFl5jk+aZr/dfy4bYk3So9GRNsgn4dVppqmGtsspaI6yMWCCqXjPv0yLCjaua3LXrxVLAgZdD0DkYuuSsv/yOIbdgCWbo3Y7hWZVJ4lvUXEOolPydFrWG7mayGaln+FJtO/LuJHtQib67rhIpFrhQioc+i61pWBS+N+Iks1lOTrGPM00pRDio4IQFtCSeSeCmY/a0KCAc8y2J5SvyWRMNOa39sAReFfahiAGexSc1DSjdmKfV3dxN1lvEGa0af+1QfyGQVN/cMYO8dMpX5rdvb+B8gB8SVjR6D6tC6KFrr8zAwiMpe7A3Vycc9XymsAIo5W+sHnTcobY1IIqNYP0jpkJ7dwO1cVaZe/vmvTuUh+yERaS7lbH1sJ7DAApaDDdI/jTtl7SyloKe2TzqFFWWNA1FG6UH+lWtdNxjKFO09Kpu1ePzv29y3PcBjluVICnB2cvBPRaO3jLzPFaqdD0elUITr19VgIzeIEkXyEqRXnMvprYnF3Q6CZSo1Rs0VZBG0u/qfzkR1LpfIMYidR0v+FHFL1+qhsDP7zecu2iVUkVmJhcmA7+CCo/yI6pBMPNX7GjL4qHalyFKNp7PQFPX7CYOeTPcyrYOzs0deG1MoYxqZXu/F27drou1y0Hxf42oVV9xdzvzt3vLNOoZMmdsPv/5VUJLqxqIpluTxUG+iTToGUGAE=",
+          "thinking": "",
+          "type": "thinking"
+        },
+        {
+          "text": "Labor at Summit Sky Deck was more productive last week (Sep 28 \u2013 Oct 4, 2026). Guests per labor hour rose to 3.82 from 3.55 the week before, up 7.46%, even though labor hours grew 4.22% to 484.47. Payroll was $9,347, which is 11.08% of revenue, up from 10.53%. That payroll number is incomplete and probably too low: 2 shifts covering 12.98 hours have no pay rate.",
+          "type": "text"
+        }
+      ],
+      "stop_reason": "end_turn",
+      "usage": {
+        "input_tokens": 2478,
+        "output_tokens": 190
+      },
+      "model": "claude-opus-5-5"
+    }
+  ]
+}

@@ -274,3 +274,18 @@ answer has been recorded yet, so the eval shows 1 of 7.
 
 Time: 27.3 active minutes against a 40 minute budget, including the
 Phase 4 follow-ups.
+
+Follow-up after recording (same day): Nick's first `make evals RECORD=1`
+had no key (no `.env`). It made no calls but wrote six empty recordings
+and reported $0.0000. `--record` now stops when there is no key, an
+unfinished conversation is not saved, and no cost is shown when the model
+never answered. The empty files were deleted. The second run, with the key,
+passed 6 of 7 at a mean of $0.0192 per question, and a replay with no calls
+gave the same table. The recordings were checked before commit: model turns
+only, empty thinking text, none of the guest or free-text field names.
+
+`missing_day` fails on the forbidden word "zero". The answer says there is
+no data for that day and that it "shouldn't be read as zero visitors",
+which is the behaviour the case wants. The forbidden list is too blunt.
+The case was left as is for Nick to decide, since cases.yaml is not edited
+to make a case pass.

@@ -1,0 +1,49 @@
+{
+  "question": "How did last week compare to last year?",
+  "model": "claude-opus-5-5",
+  "turns": [
+    {
+      "content": [
+        {
+          "id": "toolu_017Cv9RqqKjUoDiPtU6BeQhc",
+          "caller": {
+            "type": "direct"
+          },
+          "input": {
+            "period": "last_week",
+            "start": null,
+            "end": null,
+            "compare": "last_year"
+          },
+          "name": "get_kpis",
+          "type": "tool_use"
+        }
+      ],
+      "stop_reason": "tool_use",
+      "usage": {
+        "input_tokens": 1788,
+        "output_tokens": 117
+      },
+      "model": "claude-opus-5-5"
+    },
+    {
+      "content": [
+        {
+          "signature": "CAQS5AQKEAgSGAI4AUIIdGhpbmtpbmcSDMB+pD//RLB/joNwhRoMSBuSI1fvJ8pOZlOKIjDeGkeKcQbhSI70y3MzAqFEtpXDDJ/kDEoNRi0U2dWgaCMNEHO0Hg5rdaXC/sE0Y9gqgQTbzxFjnfqhFTdGI40DW5BlUkKBuc44zAHhzyBaRRG6P5mFJtODzfmg4P22mJU5RgxUn2xD9MNqJ+kofe7rfBxDgLiB+i31zrUeXsgYOXEwdev9Ee0Phq3tnZrsym4sgXuv1XNEte8zOazWzD94Sw3V8xvcKrV5Fk+HykZWgeOCckW3lkX5DKlC4cnMyMqNwPz5bn/uP0QUwD1C411spMfritR9GZuqlgSSDSYlmcMNs4p4XTB//Aw3qi8qDcwibJtM6o4DhDsfH8NCWe6QeqFgIuZVuMQrQ8YhBk4vgq5AxGnHufde/cuCEnMzXdMcO/DtACd4e+eCSjrk4ZT8SCmR/JnWTN6L08W9hUGcDXYfGt5IAV2l/zvy7Y/OUNd2GZmkn/aJxF02ag50Vc+cjRQLQjy9PXHyQgz/7wnDAAUNzue3BA5Ki1IVatOe5Rf2mal9V21r38Nh+rnzWEitEAG4cbOXnntR92614hLe7OfRjxwoxupUJaM+bahYY+4BFhM7D+X8Y77MWaULhc23Ej1H31V3hEG7SRn214uCusgasYu82RjdbIm2WfebkFyAhdW9T10Auzm057FpGaE4YKDGE85B7T1EftLfsQ+vzaPi1UvEzEUnOBFW1mhkaC75+gw2DbFOkAlriyV8VpgG4HR8TqSe303PAmFWG6qrWgtoMXsYAQ==",
+          "thinking": "",
+          "type": "thinking"
+        },
+        {
+          "text": "Last week (Sep 28 to Oct 4, 2026), Summit Sky Deck brought in $84,328 in total revenue, down 8.23% from $91,891 in the same week last year. That's 90.51% of plan, so it's flagged amber. Attendance rose 13.92% to 1,849, ticket revenue rose 20.49% to $61,576, and merchandise rose 51.0% to $6,957. Most of the drop came from private events, which fell 75.76% to $6,565 from $27,088, and that pulled the total per cap down 19.45% to $45.61.",
+          "type": "text"
+        }
+      ],
+      "stop_reason": "end_turn",
+      "usage": {
+        "input_tokens": 2897,
+        "output_tokens": 207
+      },
+      "model": "claude-opus-5-5"
+    }
+  ]
+}

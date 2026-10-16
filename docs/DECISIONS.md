@@ -349,10 +349,11 @@ fallback.
 
 Why. Nick chose Opus 5.5 for its judgment on the refusal and injection
 cases. At $4 and $20 per million input and output tokens (pricing page read
-2026-10-16), a question with two or three turns costs a few cents.
-build/reports/evals.md gives the measured mean.
+2026-10-16), the recorded run on 2026-10-16 measured $0.0192 per question
+on average: about $0.024 with one tool call (about 4,600 input and 300
+output tokens) and $0.009 with none. At 200 venues and 20 questions a day
+each, that is about $77 a day before prompt caching.
 
 Consequences. An unrecorded question with the default client always gets
 the table. Re-record after changing the system prompt, the tools or the
-cases. Until the first `make evals RECORD=1` run is committed, `make evals`
-fails every case that needs the model.
+cases.

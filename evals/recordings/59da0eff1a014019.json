@@ -1,0 +1,44 @@
+{
+  "question": "What was attendance on 2026-04-18?",
+  "model": "claude-opus-5-5",
+  "turns": [
+    {
+      "content": [
+        {
+          "id": "toolu_01CaJdDQSob3WVr8mwmc3P2B",
+          "caller": {
+            "type": "direct"
+          },
+          "input": {
+            "period": "custom",
+            "start": "2026-04-18",
+            "end": "2026-04-18",
+            "compare": "none"
+          },
+          "name": "get_kpis",
+          "type": "tool_use"
+        }
+      ],
+      "stop_reason": "tool_use",
+      "usage": {
+        "input_tokens": 1795,
+        "output_tokens": 124
+      },
+      "model": "claude-opus-5-5"
+    },
+    {
+      "content": [
+        {
+          "text": "I don't know what attendance was at Riverbend Tower Lookout on 2026-04-18, because there's no data for that day. Neither the ticketing feed nor the point-of-sale feed reported anything, so it shouldn't be read as zero visitors. The plan for that day was 236 guests, but I can't compare against it without actual figures. I can check nearby dates once the data for this day has been loaded.",
+          "type": "text"
+        }
+      ],
+      "stop_reason": "end_turn",
+      "usage": {
+        "input_tokens": 2832,
+        "output_tokens": 131
+      },
+      "model": "claude-opus-5-5"
+    }
+  ]
+}
