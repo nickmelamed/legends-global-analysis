@@ -1,9 +1,9 @@
 # Stakeholder backlog
 
-Four people, four asks, and fewer distinct needs than asks. Dana and Marcus
+The four stakeholders have fewer distinct needs than asks. Dana and Marcus
 both want to know what kind of day is coming. Priya and Ben both want
 numbers they can trust and trace. Marcus also wants questions answered in
-plain words, which the Ask prototype now tests.
+plain words, which the Ask prototype tests.
 
 ## Asks and needs
 
@@ -17,8 +17,7 @@ plain words, which the Ask prototype now tests.
 ## Where they conflict
 
 Dana wants every salesperson to see every venue. Ben wants venue access
-enforced by the server. These fit together if scope is a role, not a
-person. The API already resolves each user to a list of venues and applies
+enforced by the server. These fit together if scope is assigned by role. The API already resolves each user to a list of venues and applies
 it in one helper, so a "portfolio sales" Entra group can map to all venues
 while a GM maps to one. The open part is whether sales should also see
 labor and payroll for venues they do not run. I would scope by venue and by
@@ -27,8 +26,7 @@ metric family, and default sales to revenue only.
 Marcus wants speed and Priya wants accuracy. A 5 AM summary has to read
 yesterday's data before anyone has checked it. The way through is to run
 the load overnight, publish only when every blocking check passes, and say
-"no data" or "stale since" when it fails. A fast wrong number costs more
-than a late right one.
+"no data" or "stale since" when it fails. 
 
 Automation versus trust shows up twice. Marcus wants the forecast to tell
 him which shifts to cut, but guaranteed hours and minimum-shift rules mean a
@@ -39,31 +37,34 @@ recommend, show the evidence and leave the action to a person.
 
 1. A load health page for Priya. The `data_quality` table already records
    every check on every run (duplicates dropped, missing rates, missing
-   venue-days). Showing it is cheap and earns trust before anything else.
+   venue-days). The data is already there, so it is a small build.
 2. An overtime flag for Marcus. Actual hours against the schedule, by
    week, checked daily. The labor and schedule sheets already have what it
-   needs. A week like the one Marcus describes last summer would show by
-   its third day.
-3. The Overview on a phone, which exists, plus Ask the data, which exists
-   as a prototype with recorded answers. Put both in front of Marcus and
-   watch what he types.
+   needs. Run daily, it would flag an overtime week before payroll closes.
+3. Put the Overview, which already works on a phone, and the Ask prototype
+   in front of Marcus and watch what he types.
 4. Weather on the attendance chart from the cached sheet, to test whether
    weather explains the swings Dana asks about before paying for a forecast
-   feed.
+   feed. Before trusting the sheet I would check where it came from, its
+   units, whether a day is the local calendar day, and its licence. It ends
+   on 2026-10-04 and holds observed weather only, so it cannot support a
+   forecast. For production, the free Open-Meteo tier is non-commercial,
+   which Ben has ruled out. A paid plan or another licensed provider is
+   fine. The optional weather prototype was not built.
 
 The day-ahead staffing forecast comes after these, once there is a backtest
 that shows how often its range is right.
 
 ## What not to build
 
-Competitor price scraping. It likely breaks the competitors' terms of use,
-breaks whenever their sites change, and would feed pricing decisions with
-data nobody can vouch for. A licensed rate-shopping service or a weekly
-manual check is safer. The free Open-Meteo tier is non-commercial, which Ben
-has already ruled out for production. A paid plan or another licensed
-provider is fine. Automatic shift changes, for the reason above. The
-private events conversion number, until its definition is agreed, because
-Dana is not sure it is right and I have not checked it.
+- Competitor price scraping. It likely breaks the competitors' terms of
+  use, breaks whenever their sites change, and would feed pricing decisions
+  with data nobody can vouch for. A licensed rate-shopping service or a
+  weekly manual check is safer.
+- Automatic shift changes, since guaranteed hours and minimum-shift rules
+  need a person to decide.
+- The private events conversion number, until its definition is agreed.
+  Dana is not sure it is right and I have not checked it.
 
 ## Questions I would still ask
 
@@ -88,7 +89,4 @@ For trust, count the data problems the load report caught before someone
 asked about them. For Dana's "fewer surprises", count the weekly swings
 over 10% that have no explanation attached.
 
-The optional weather prototype was not built. Before trusting the cached
-weather sheet I would check where it came from, its units, whether a day is
-the local calendar day, and its licence. It also ends on 2026-10-04 and holds
-observed weather only, so it cannot support a forecast.
+

@@ -7,9 +7,8 @@ in the docs it links to.
 
 ## What I built and why
 
-The Power BI report failed people in three ways. It was slow, it was stale
-without saying so, and nobody could tell whether its numbers were right. So
-the order of work was the data first, then a reconciliation against the
+The Power BI report was slow, went stale without saying so, and nobody
+could tell whether its numbers were right. So the order of work was the data first, then a reconciliation against the
 report, then the API with venue scope, then the Overview page, and last one
 AI feature.
 
@@ -44,7 +43,7 @@ was enough for three venues and one container.
 
 At 200 venues the rules and the scope helper would stay as they are. The
 rest changes. The workbooks become feeds loaded per venue on a schedule,
-and a failed check blocks that venue's load, not all 200. DuckDB becomes
+and a failed check blocks only that venue's load. DuckDB becomes
 Azure SQL or Postgres, since many writers and many readers need a server.
 The mapping tables for messy labels become reference data that operations
 maintains, with an alert when a new spelling arrives. Scope comes from
@@ -64,7 +63,7 @@ is on Summit for 2026-09-28 to 2026-10-04.
 | Cancelled lines keep their quantity and value. LT and NT spell status differently | `record_status` is ACTIVE on every row | A per-source list of cancelled statuses. An unknown status stops the load | 80 guests and $1,945 removed |
 | Add-ons and event entries in the ticket feed | `dim_package` class | Excluded from attendance and ticket revenue | 112 guests and $1,330 removed |
 | NT `event_time` is UTC | Raw hours run 13 to 3 | Use `event_date`, and warn if the converted time disagrees | None. The raw UTC date would cost 1 guest and $160 |
-| POS order totals repeat on every line | One total per order | Revenue from lines, net of discount, voids out | Avoids overstating F&B and merch |
+| POS order totals repeat on every line | One total per order | Revenue from lines, net of discount, voids out | Not measured. Summing per-line totals would overstate F&B and merch |
 | POS rows that look like duplicates are real | Subtotals only match with them kept | Never deduplicate POS | Dropping them would remove $418 |
 | Messy labor labels | 24 department labels, 12 location spellings | Mapping tables. An unmapped value stops the load | Department split only |
 | Shifts with no rate | Null rate and earnings | Payroll marked incomplete, no estimate | 2 shifts and 13 hours unpaid, about $267 |
@@ -90,9 +89,8 @@ worse as venues are summed (R-001). Productivity shows 3.82 where Power BI
 shows 3.81, probably because it rounds each shift's hours first. The hours
 target matches the unrounded sum, so we kept that (R-004).
 
-Other decisions with a cost. Payroll with missing rates shows as incomplete
-instead of estimated, which leaves a number visibly short rather than
-quietly guessed (D-006). The package class and channel filters apply only
+Other decisions had costs. Payroll with missing rates is marked incomplete
+instead of estimated (D-006). The package class and channel filters apply only
 to ticket metrics, and the tiles they do not affect are labelled, because
 POS and labor have no package or channel (D-010). Date presets end
 yesterday, so a partial day never looks like a dip (D-011). A comparison
@@ -101,19 +99,20 @@ over missing days shows no delta colour at all (D-012).
 For Ask the data, the model never writes a number on its own. Tools return
 the figures, and code rejects any reply containing a number that is not in
 the tool output. A rejected reply falls back to a plain table. What I gave
-up is a check on meaning. The check matches values, not metrics, so "attendance
+up is a check on meaning. The check matches values only, so "attendance
 was 91,891" would pass if 91,891 is the comparison revenue. The page says
 this and shows the table under every answer (D-015).
 
 ## How we know the numbers are right
 
-Four layers. The 285 tests include a unit test with a small synthetic
+The numbers are checked in four ways. The 285 tests include a unit test with a small synthetic
 fixture for every rule. The load runs blocking checks on the real data on
 every run, such as POS subtotals matching their lines and duplicate loads
 agreeing. `make reconcile` compares the week with the Power BI targets in
 `tests/fixtures/pbi_targets.json`. 23 of 24 targets match, all eight for
 Summit, and the one miss is R-001. A slow test checks Summit's week through
-the API as well, so the page and the reconciliation cannot drift apart.
+the API as well, so a change that moves the page's Summit numbers away from the
+reconciliation fails a test.
 `make numbers` checks that every decimal and percentage in these docs
 appears in a generated report.
 
@@ -123,9 +122,8 @@ be a 403), a question the data cannot answer, a prompt injection and a
 missing day. 6 of 7 pass on the recorded Opus 5.5 answers. The failure, <!-- numbers: ok, a model version -->
 `missing_day`, is the eval being too strict. The answer correctly says
 there is no data and that it "shouldn't be read as zero visitors", but the
-case forbids the word "zero". I left it failing on purpose, as an example
-of a check that needs fixing instead of a reason to edit the expected
-answer.
+case forbids the word "zero". I left it failing. The check needs fixing, and the expected answer stays
+as written.
 
 In CI, `make ci` runs lint, types, tests and style on every push. In
 production the same reconciliation would run after each nightly load
@@ -140,7 +138,8 @@ built. Today the user comes from `DEV_USER` or an `X-Dev-User` header,
 which anyone can set, so that path must be removed before this goes
 anywhere near production. Venue scope is enforced on the server in one
 helper, and every route has a test as `marcus@dev`, including the export
-and Ask. Changing a URL or a query parameter gives a 403.
+and Ask. Asking for a venue outside your scope, by URL or query parameter, gives a
+403.
 
 Secrets live in `.env`, which is gitignored and excluded from Docker
 images. In Azure the API key would be a Key Vault reference in the App
@@ -151,8 +150,8 @@ outputs, which are aggregates such as revenue by department for a venue
 and week. Guest fields (country, order ids, person ids) and free-text
 fields (comments, notes, void and lost reasons) are never loaded into the
 database (D-009), so no tool can return them. The venue comes from the
-user's scope and is never a model argument, so a prompt injection cannot
-widen access. The eval's injection case checks this. The recorded run
+user's scope and is never a model argument, so injected text cannot change which venue is queried. One eval case tests
+this. The recorded run
 measured $0.0192 per question, about $77 a day at 200 venues and 20
 questions each, before prompt caching (D-016). Ben's other questions,
 where requests are processed and whether they are retained, depend on the
@@ -166,15 +165,12 @@ Rollback is swapping back.
 
 ## AI log and reflection
 
-I built this with Claude Code. I wrote the plan and the rules of the
-project, read every diff, and made every call where the data was
-ambiguous. docs/AI_LOG.md has the phase-by-phase record, mistakes included.
+I built this with Claude Code. I wrote the plan and the project rules and reviewed each diff. docs/AI_LOG.md has the phase-by-phase record, mistakes included.
 
 It helped most where the work was wide and checkable. Profiling five
 workbooks in parallel, testing eleven hypotheses about the data and working
 out that the Ancillary visual subtracts Bar twice took about 20 minutes. It
-wrote the tests, the Docker setup and the first drafts of these docs, and
-an adversarial reviewer agent found real bugs at the end of every phase.
+wrote the tests, the Docker setup and the first drafts of these docs, and a reviewer agent found bugs at the end of each phase (see AI_LOG).
 
 It was wrong in ways that matter. During profiling its scripts printed
 guest order ids, country counts and a void reason into model context,
@@ -192,15 +188,13 @@ agent, and breaking the code on purpose to see if a test failed.
 
 One thing I would never let it do unattended is decide which number is
 right. When our figure and Power BI's disagree, the easy fixes are to edit
-the target, loosen the test or tweak a rule until they match. Each of
-those looks like progress, and each one hides the question Finance most
-needs answered.
+the target, loosen the test or tweak a rule until they match. Each of those hides the disagreement Finance needs to see.
 
 ## What I cut and what is next
 
 - Entra sign-in, and removing the dev user header.
 - A metric-level grounding check that ties each number to its label.
-- Fixing the `missing_day` eval case so it checks meaning, not a word.
+- Fixing the `missing_day` eval case, which fails on the word "zero".
 - The other tabs (Ticketing, F&B, Merchandise, Events, Pacing Report,
   Cost Watch, Support, Settings). They are routes that keep the filters.
 - The load health page and the overtime flag, first in the backlog.

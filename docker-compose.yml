@@ -1,6 +1,5 @@
-# docker compose up: load the workbooks into build/attractions.duckdb, then
-# serve the api and the web app at http://localhost:8080.
-# Settings come from .env.example, overridden by .env when it exists.
+# Loads the workbooks into build/attractions.duckdb, then serves the api and
+# the web app on port 8080.
 
 x-env: &env
   env_file:

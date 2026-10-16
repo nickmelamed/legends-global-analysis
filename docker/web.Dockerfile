@@ -1,6 +1,5 @@
 # Built from the repo root because the logo and fonts are read from ../brand
-# (see web/vite.config.ts). The built files are served by nginx, which
-# proxies /api to the api service.
+# (see web/vite.config.ts).
 FROM node:20.18.1-alpine AS build
 
 WORKDIR /src/web

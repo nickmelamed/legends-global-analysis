@@ -5,9 +5,8 @@ report, built for the Legends Global take-home. It covers the Overview page
 on the synthetic data, a repeatable load, venue scoping enforced by the
 server, and "Ask the data", a grounded question box with a small eval.
 
-Built with Claude Code under Nick Melamed's design and review. Every diff
-was read before it was committed, and docs/AI_LOG.md records what the agent
-did and where it was wrong.
+Built with Claude Code under Nick Melamed's direction. docs/AI_LOG.md records
+what the agent did and where it was wrong.
 
 ## Run it (about 5 minutes)
 
@@ -75,8 +74,7 @@ make ci           # lint, typecheck, tests, style
 ```
 
 The targets are in `tests/fixtures/pbi_targets.json`. Summit Sky Deck for
-2026-09-28 to 2026-10-04 matches to the dollar. Every gap, at any venue, is
-explained in docs/RECONCILIATION.md.
+2026-09-28 to 2026-10-04 matches to the dollar. Each difference is listed in docs/RECONCILIATION.md (R-001 to R-004).
 
 ## Where to read
 
@@ -93,8 +91,8 @@ explained in docs/RECONCILIATION.md.
 
 ## Layout
 
-- `pipeline/`: the load (`load.py`) and every business rule (`rules.py`).
-- `api/`: FastAPI. `scope.py` is the one place venue scope is applied.
-- `web/`: React, TypeScript and Vite.
-- `evals/`: the Ask cases, recordings and runner.
-- `tests/`: pytest with small synthetic fixtures.
+- `pipeline/` holds the load (`load.py`) and every business rule (`rules.py`).
+- `api/` is FastAPI. `scope.py` is the one place venue scope is applied.
+- `web/` is React, TypeScript and Vite.
+- `evals/` holds the Ask cases, recordings and runner.
+- `tests/` is pytest with small synthetic fixtures.
