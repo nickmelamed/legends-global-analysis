@@ -53,3 +53,48 @@ for now: Postgres (more moving parts for no benefit at three venues).
 Consequences. At 200 venues and with concurrent writes, move to Postgres with
 the same SQL. A DuckDB file cannot be shared by several writers, so the load
 and the API must not write at the same time.
+
+## D-003: Bar revenue rolls into Restaurant (2026-10-16)
+
+Context. POS has four outlets (Restaurant, Cafe, Bar, Gift Shop). The
+Overview's department split and `budget_daily` have Restaurant and Cafe but
+no Bar. Summit's Bar revenue in the reconciliation week is $1,251.02.
+
+Decision. Bar is reported under Restaurant in the department split and the
+budget comparison. F&B stays Restaurant + Bar + Cafe, as the packet defines.
+
+Why. Bar is closer to Restaurant than to Cafe. Both sell alcohol and both
+add a 20% gratuity, while Cafe sells only food and non-alcoholic drinks.
+
+Consequences. Summit's Restaurant line for the week is $7,035.30. The
+mapping lives in `pipeline/rules.py` with a test.
+
+## D-004: What counts as attendance (2026-10-16)
+
+Context. Power BI counts Annual Pass visits ($0 value), no-shows and the one
+Free Admission Day (RTL 2026-05-09, 142 lines). Each of these could be argued
+either way.
+
+Decision. All three count as attendance. Cancelled lines and the
+NON-ADMISSION and EVENT package classes do not.
+
+Why. It matches the Power BI targets (1,849 at Summit), and Nick confirmed
+each one. Excluding passes would give 1,781, and excluding no-shows 1,772.
+
+Consequences. Attendance means tickets issued for a visit date, not
+turnstile entries. Per cap and ATP include the $0 pass visits.
+
+## D-005: RTL 2026-04-18 is a missing feed (2026-10-16)
+
+Context. Riverbend has no ticket rows and no POS rows on 2026-04-18, a
+Saturday, but labor shows a normal staffed day.
+
+Decision. Treat it as a missing feed. Ticket, F&B and merchandise show "no
+data" for that venue-day, never zero.
+
+Why. Nothing in the data points to a closure. Labor shows 9 shifts and
+55.15 hours that day, in line with the surrounding week (6 to 10 shifts).
+The days either side had 150 and 206 guests.
+
+Consequences. Any window containing that day carries a data gap flag, and
+Riverbend's April trend shows a gap rather than a dip.
