@@ -89,6 +89,10 @@ def test_grounded_reply_is_returned_with_its_numbers(make_client):
     rows = {r["metric"]: r for r in body["table"]}
     assert rows["Attendance"]["current"] == 70
     assert rows["Total revenue"]["current"] == 3230.0
+    assert rows["Attendance"]["plan"] == 70
+    assert rows["Attendance"]["percent_of_plan"] == 100.0
+    assert rows["Total revenue"]["plan"] == 2870.0
+    assert rows["Average ticket price"]["plan"] is None
     assert body["usage"] == {"input_tokens": 300, "output_tokens": 30}
 
 

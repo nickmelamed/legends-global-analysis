@@ -77,6 +77,8 @@ def _rows(outputs: list[dict]) -> list[dict]:
                     "current": m["current"],
                     "comparison": m["comparison"],
                     "percent_change": m["percent_change"],
+                    "plan": m.get("plan"),
+                    "percent_of_plan": m.get("percent_of_plan"),
                     "no_data": m["current_has_no_data_days"],
                 }
             )

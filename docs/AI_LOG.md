@@ -291,3 +291,6 @@ The case was left as is for Nick to decide, since cases.yaml is not edited
 to make a case pass.
 docs/screenshots/ask-1440-light.png was retaken with the recorded Opus
 answer and now shows model output, not the e2e fixture.
+Nick kept `missing_day` failing as an example of an eval that is too
+strict, for the write-up. The Ask table now has plan and percent-of-plan
+columns, since answers quote "90.51% of plan" and the table did not show it.

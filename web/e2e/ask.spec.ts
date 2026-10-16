@@ -10,6 +10,8 @@ test("a recorded answer is shown with its checked figures", async ({ page }) => 
   await expect(total).toContainText("$84,328.25");
   await expect(total).toContainText("$91,891.36");
   await expect(total).toContainText("vs Sep 29, 2025 – Oct 5, 2025");
+  await expect(total).toContainText("$93,165.02");
+  await expect(total).toContainText("90.51%");
   // Writing the file is opt-in so a test run leaves the tree clean.
   if (process.env.SCREENSHOTS) {
     await page.setViewportSize({ width: 1440, height: 900 });

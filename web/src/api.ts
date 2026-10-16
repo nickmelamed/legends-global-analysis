@@ -101,6 +101,8 @@ export interface AskRow {
   current: number | null;
   comparison: number | null;
   percent_change: number | null;
+  plan: number | null;
+  percent_of_plan: number | null;
   no_data: boolean;
 }
 

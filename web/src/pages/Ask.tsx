@@ -79,6 +79,8 @@ export function Ask() {
                   <th>Actual</th>
                   <th>Comparison</th>
                   <th>Change</th>
+                  <th>Plan</th>
+                  <th>Of plan</th>
                 </tr>
               </thead>
               <tbody>
@@ -95,6 +97,8 @@ export function Ask() {
                     </td>
                     <td>{r.compared ? formatExact(r.comparison, r.unit) : "Not compared"}</td>
                     <td>{r.compared ? formatExact(r.percent_change, "pct") : ""}</td>
+                    <td>{r.plan === null ? "No plan" : formatExact(r.plan, r.unit)}</td>
+                    <td>{r.plan === null ? "" : formatExact(r.percent_of_plan, "pct")}</td>
                   </tr>
                 ))}
               </tbody>
