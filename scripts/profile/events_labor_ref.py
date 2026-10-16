@@ -1,15 +1,13 @@
 """Profile the private events, labor and reference workbooks.
 
 Run from the repo root: ``python3 scripts/profile/events_labor_ref.py``.
-Reads the supplied workbooks read-only and prints the figures cited in the
-data profile.
 """
 
 from pathlib import Path
 
 import pandas as pd
 
-DATA = Path("data")
+DATA = Path(__file__).resolve().parents[2] / "data"
 WEEK_START = pd.Timestamp("2026-09-28")
 WEEK_END = pd.Timestamp("2026-10-04")
 PRIOR_START = pd.Timestamp("2026-09-21")
@@ -243,7 +241,16 @@ def labor_findings(la: pd.DataFrame, ls: pd.DataFrame) -> None:
     key = ["venue_code", "person_id", "date", "actual_in"]
     dup = la[la.duplicated(key, keep=False)]
     print("duplicate business key rows:")
-    print(dup[key + ["actual_out", "total_hrs", "rate", "total_earnings"]].to_string())
+    shown = [
+        "venue_code",
+        "date",
+        "actual_in",
+        "actual_out",
+        "total_hrs",
+        "rate",
+        "total_earnings",
+    ]
+    print(dup[shown].to_string(index=False))
     print(f"exact duplicate rows {la.duplicated(keep=False).sum()}")
     ordered = la.sort_values(["person_id", "actual_in"])
     prev_out = ordered.groupby("person_id").actual_out.shift()
@@ -432,6 +439,10 @@ def coverage(sheets: dict[str, pd.DataFrame]) -> None:
         f"RTL labor shifts per April day: min {april.min()} on "
         f"{april.idxmin().date()}, median {april.median()}, all-days min {rtl.min()}"
     )
+    near = la[(la.venue_code == "RTL") & la.date.between("2026-04-11", "2026-04-25")]
+    daily = near.groupby("date").total_hrs.agg(["count", "sum"]).round(2)
+    print("RTL labor shifts and hours 2026-04-11..25:")
+    print(daily.to_string())
     ev = sheets["private_events"]
     ev = ev[ev.record_type == "EVENT"]
     april_events = ev[(ev.venue_code == "RTL") & (ev.event_date.dt.month == 4)]

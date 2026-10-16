@@ -20,7 +20,6 @@ LABEL_COLUMNS = [
     "product_category",
     "item_quantity",
     "is_voided",
-    "voided_reason",
     "tender_type",
 ]
 
@@ -54,6 +53,12 @@ def profile_columns(df):
     section("Distinct values")
     for col in LABEL_COLUMNS:
         print(col, df[col].value_counts(dropna=False).to_dict())
+    reasons = df["voided_reason"].dropna().astype(str)
+    # Free text: count and length only, never the values.
+    print(
+        f"voided_reason non-null {len(reasons)}, distinct {reasons.nunique()}, "
+        f"length min {reasons.str.len().min()} max {reasons.str.len().max()}"
+    )
     print("outlet x category")
     print(pd.crosstab(df["outlet"], df["product_category"]))
     print(
@@ -110,7 +115,6 @@ def duplicates(df):
     dups = df[df["exact_dup"]]
     print("by venue", dups["venue_code"].value_counts().to_dict())
     print("orders containing an exact duplicate", dups["order_id"].nunique())
-    print("example ids", dups["order_id"].head(5).tolist())
     same_key = df.duplicated(["order_id", "product_name"]).sum()
     print("rows repeating order_id+product_name (any content)", same_key)
     ssd_week = in_week(df[df["venue_code"].eq("SSD") & df["exact_dup"] & ~df["voided"]])
@@ -127,6 +131,9 @@ def timezones(df):
     section("H6 timestamps")
     print(pd.crosstab(df["order_created_date"].dt.hour, df["venue_code"]).to_string())
     late = df[df["order_created_date"].dt.hour < 4]
+    hours = df["order_created_date"].dt.hour
+    print("outlet x hour (a UTC subset would show rows outside each outlet's hours)")
+    print(pd.crosstab(df["outlet"], hours).to_string())
     print("rows before 04:00", len(late), late["venue_code"].value_counts().to_dict())
     print(
         "rows between 02:00 and 08:59",
@@ -143,8 +150,8 @@ def timezones(df):
         ]
         print(
             f"{venue} week net calendar-day {cal:.2f} business-day {biz:.2f} "
-            f"rows moved {len(moved_week)} "
-            f"ids {moved_week['order_id'].unique().tolist()}"
+            f"rows moved {len(moved_week)} orders {moved_week['order_id'].nunique()} "
+            f"net {moved_week['net'].sum():.2f}"
         )
 
 
@@ -158,6 +165,45 @@ def missing_days(df):
         for outlet, orows in rows.groupby("outlet"):
             gap = days.difference(orows["biz_day"].unique())
             print(f"  {outlet}: {len(gap)}", [d.strftime("%Y-%m-%d") for d in gap])
+        bar = rows[rows["outlet"].eq("Bar")]
+        orders = bar.groupby("biz_day")["order_id"].nunique()
+        open_days = pd.DatetimeIndex(rows["biz_day"].unique())
+        bar_gaps = open_days.difference(orders.index)
+        print(
+            f"  Bar gaps on days with other POS rows {len(bar_gaps)}, weekdays "
+            f"{bar_gaps.day_name().value_counts().to_dict()}, "
+            f"median Bar orders on Bar days {orders.median()}"
+        )
+
+
+def budget_split(df):
+    """Compare the Restaurant budget with Restaurant actuals with and without Bar."""
+    section("Restaurant budget vs actual, with and without Bar")
+    budget = pd.read_excel(REF, sheet_name="budget_daily")
+    budget["date"] = pd.to_datetime(budget["date"])
+    live = df[~df["voided"]]
+    for lo, hi in [("2025-01-01", "2025-12-31"), ("2026-01-01", "2026-10-04")]:
+        b = budget[budget["date"].between(lo, hi)].pivot_table(
+            index="venue_code",
+            columns="department",
+            values="budget_revenue",
+            aggfunc="sum",
+        )
+        a = live[live["biz_day"].between(lo, hi)].pivot_table(
+            index="venue_code", columns="outlet", values="net", aggfunc="sum"
+        )
+        out = pd.DataFrame(
+            {
+                "restaurant_pct": a["Restaurant"] / b["Restaurant"] * 100,
+                "restaurant_bar_pct": (a["Restaurant"] + a["Bar"])
+                / b["Restaurant"]
+                * 100,
+                "cafe_pct": a["Cafe"] / b["Cafe"] * 100,
+                "cafe_bar_pct": (a["Cafe"] + a["Bar"]) / b["Cafe"] * 100,
+            }
+        )
+        print(lo, hi)
+        print(out.round(1).to_string())
 
 
 def reproduce(df):
@@ -234,6 +280,7 @@ def main():
     order_consistency(df)
     timezones(df)
     missing_days(df)
+    budget_split(df)
     reproduce(df)
     ancillary(df)
     venues = pd.read_excel(REF, sheet_name="dim_venue")

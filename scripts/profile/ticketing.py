@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pandas as pd
 
-DATA = Path("data")
+DATA = Path(__file__).resolve().parents[2] / "data"
 TICKETING = DATA / "01_Ticketing.xlsx"
 REFERENCE = DATA / "05_Reference_Budget_Context.xlsx"
 
@@ -24,7 +24,6 @@ CATEGORICAL = {
         "merchant_id",
         "ticket_status",
         "promotional_code",
-        "customer_country",
         "o_device",
         "record_status",
     ],
@@ -262,6 +261,11 @@ def profile_missing_days(fact):
         .size()
     )
     print("lowest line counts per venue-day:", daily.nsmallest(5).to_dict())
+    rtl = fact[fact.attraction_prefix.eq("RTL")].groupby("event_date").quantity.sum()
+    near = rtl[rtl.index.to_series().between("2026-04-11", "2026-04-25")]
+    print(
+        "RTL guests 2026-04-11..25:", {d.date().isoformat(): q for d, q in near.items()}
+    )
 
 
 def countable(fact, drop_cancelled=True, drop_non_admission=True):
