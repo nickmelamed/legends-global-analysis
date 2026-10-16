@@ -164,7 +164,12 @@ Ben whether a model hosted through Azure is required instead.
 Deployment would be App Service for Containers with a staging slot.
 Deploy to staging, run the smoke test (Summit's week matches the targets,
 Marcus gets a 403 on Riverbend, freshness is current), then swap.
-Rollback is swapping back.
+Rollback is swapping back. That rolls back code, not data. The nightly
+load would run as a scheduled Container Apps job that writes the database
+file to Azure Files, which the API mounts read-only. Each load writes a new
+file and keeps the previous one, so a bad load is rolled back by pointing
+the API at yesterday's file. At 200 venues this becomes the managed
+database described above, with its own point-in-time restore.
 
 ## AI log and reflection
 
@@ -172,7 +177,8 @@ I built this with Claude Code. I wrote the plan and the project rules and review
 
 It helped most where the work was wide and checkable. Profiling five
 workbooks in parallel, testing eleven hypotheses about the data and working
-out that the Ancillary visual subtracts Bar twice took about 20 minutes. It
+out that the Ancillary visual subtracts Bar from Restaurant and then shows
+it again took about 20 minutes. It
 wrote the tests, the Docker setup and the first drafts of these docs, and a reviewer agent found bugs at the end of each phase (see AI_LOG).
 
 It was wrong in ways that matter. During profiling its scripts printed
