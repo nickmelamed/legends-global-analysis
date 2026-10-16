@@ -2,12 +2,6 @@
 # per line, run from the repo root. The whole list must finish in about 18
 # minutes (the gate's budget), and a few minutes is the real target.
 #
-# Switch to `make agent-check` once web/ exists,
-# since it also runs the TypeScript typecheck. Add `make numbers` once
-# docs/WRITEUP.md exists.
-ruff check .
-ruff format --check .
-pytest -x -q -m "not slow"
-python3 scripts/agent/check_style.py --changed .
-# make agent-check
+# Add `make numbers` once docs/WRITEUP.md exists.
+make agent-check
 # make numbers
