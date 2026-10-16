@@ -24,7 +24,10 @@ after compaction.
 
 Resolved in Phase 1: Bar rolls into Restaurant (D-003). Annual Pass visits,
 no-shows and the RTL 2026-05-09 Free Admission Day count as attendance
-(D-004). RTL 2026-04-18 is a missing feed (D-005).
+(D-004). RTL 2026-04-18 is a missing feed (D-005). Cover shifts count,
+payroll with missing rates is marked incomplete, the 0.5 h deduction stands
+(D-006). Bar gaps are closures and Affiliate stays off the channel chart
+(D-007). Productivity shows 3.82 with the 3.81 gap explained.
 
 ## Open questions for the owner
 
@@ -42,17 +45,5 @@ otherwise.
   say so and show why", and F&B is Restaurant, Bar and Cafe) and with D-003.
   The recommendation is to keep correct F&B and record the gap in
   docs/RECONCILIATION.md. Waiting on Nick.
-- Are the Bar-only outlet gaps (RTL 27 days, TRO 67, SSD 2) closures or
-  missing feeds?
-- Is the revenue-by-channel visual a Top 7 filter, or is Affiliate excluded
-  on purpose?
-- Should overlapping cover shifts count (2 shifts, 11.0 h at Summit this
-  week)? Power BI counts them.
-- Should payroll with missing rates show as incomplete instead of $0? Summit
-  this week has 2 such shifts (12.98 h).
-- Is the 0.5 h deduction on 5 h unscheduled shifts intended?
 - Some `booking_definite_date` values fall after 2026-10-05. Was the CRM
   export taken later than the other feeds?
-- Productivity. The target hours (484.5) give 3.82, but Power BI shows 3.81,
-  which fits per-shift rounded hours (484.9). We plan to show 3.82 and
-  explain it.

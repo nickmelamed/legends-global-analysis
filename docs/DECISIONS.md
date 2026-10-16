@@ -98,3 +98,41 @@ The days either side had 150 and 206 guests.
 
 Consequences. Any window containing that day carries a data gap flag, and
 Riverbend's April trend shows a gap rather than a dip.
+
+## D-006: Labor hours and incomplete payroll (2026-10-16)
+
+Context. Labor has 237 unscheduled cover shifts that overlap the same
+person's previous shift, 132 shifts with hours but no rate or earnings, and
+a 0.5 h deduction on 12,004 shifts (every shift over 6 h on the clock and
+every unscheduled shift).
+
+Decision. Cover shifts count toward labor hours. `total_hrs` is the hours
+measure, so the 0.5 h deduction stands. Payroll sums exported earnings, and
+any window with a missing-rate shift is marked incomplete with the number of
+shifts and hours affected. Payroll is not estimated.
+
+Why. Power BI counts the cover shifts, and the targets only match with them.
+The deduction is systematic, which points to an unpaid meal break by policy.
+Rates change on almost every shift, so a filled rate would be a guess, and
+showing $0 as if complete understates Summit's week by about $267.
+
+Consequences. Summit's week shows $9,347 payroll marked incomplete (2
+shifts, 12.98 h). Payroll as % of revenue carries the same flag.
+
+## D-007: Bar outlet gaps are closures, Affiliate stays off the channel chart (2026-10-16)
+
+Context. Some days have POS rows for a venue but none for its Bar (RTL 26,
+TRO 67, SSD 2). Separately, Power BI's revenue-by-channel visual leaves out
+Affiliate ($681.12 at Summit this week).
+
+Decision. A Bar gap on a day when the venue's other outlets have rows is a
+closure or a no-sale day, so Bar shows $0 for that day, not "no data". The
+revenue-by-channel chart leaves out Affiliate as Power BI does. Affiliate
+stays in ticket revenue and in ATP by channel.
+
+Why. The feed was live on those days, and the gaps fall mostly on Monday to
+Wednesday at venues where Bar's median is 2 or 3 orders a day. Nick asked to
+keep the channel chart as Power BI shows it.
+
+Consequences. The channel chart does not sum to ticket revenue. The chart
+gets a note saying Affiliate is excluded and by how much.
