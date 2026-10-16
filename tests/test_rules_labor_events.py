@@ -97,6 +97,16 @@ def test_unknown_booking_status_fails_loudly():
         rules.is_countable_event("EVENT", "Confirmed")
 
 
+def test_unknown_record_type_fails_loudly():
+    with pytest.raises(rules.UnmappedLabel):
+        rules.is_countable_event("EVNT", "Definite")
+
+
+def test_missing_labor_department_fails_loudly():
+    with pytest.raises(rules.UnmappedLabel):
+        rules.labor_department(None)
+
+
 def test_multi_day_booking_uses_event_money_on_each_event_date():
     df = pd.DataFrame(
         {

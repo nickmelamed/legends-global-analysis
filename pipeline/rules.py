@@ -87,6 +87,17 @@ def dedup_ticket_loads(df: pd.DataFrame) -> tuple[pd.DataFrame, int]:
     return out.sort_index(), len(df) - len(out)
 
 
+def conflicting_duplicate_loads(df: pd.DataFrame) -> int:
+    """Count ``ticket_line_id`` values whose copies differ beyond ``ingestion_ts``.
+
+    Keeping the latest load is only safe when the copies agree, so any count
+    above zero must stop the load.
+    """
+    repeated = df[df["ticket_line_id"].duplicated(keep=False)]
+    distinct = repeated.drop(columns="ingestion_ts").drop_duplicates()
+    return int(distinct["ticket_line_id"].value_counts().gt(1).sum())
+
+
 BUSINESS_DAY_CUTOFF_HOUR = 4
 SOURCE_ZONE_UTC = "UTC"
 SOURCE_ZONE_LOCAL = "local"
@@ -118,6 +129,31 @@ def business_dates(local_ts: pd.Series) -> pd.Series:
     """
     shifted = local_ts - pd.Timedelta(hours=BUSINESS_DAY_CUTOFF_HOUR)
     return shifted.dt.date
+
+
+def ticket_business_dates(df: pd.DataFrame) -> pd.Series:
+    """Return each ticket line's business date, which is its ``event_date``.
+
+    ``event_date`` is the local visit date in both systems. The raw NT
+    ``event_time`` is UTC and would move evening visits to the next day.
+    """
+    return pd.to_datetime(df["event_date"]).dt.date
+
+
+def ticket_event_time_mismatches(df: pd.DataFrame, timezone: str) -> int:
+    """Count lines whose ``event_time``, in local time, is not on ``event_date``.
+
+    Zero is expected. A non-zero count means a source changed its time zone.
+    """
+    mismatched = 0
+    for source, rows in df.groupby("source_system"):
+        if source not in TICKET_EVENT_TIME_ZONE:
+            raise UnmappedLabel(f"source_system {source!r} is not mapped")
+        local = to_local(
+            pd.to_datetime(rows["event_time"]), timezone, TICKET_EVENT_TIME_ZONE[source]
+        )
+        mismatched += int((business_dates(local) != ticket_business_dates(rows)).sum())
+    return mismatched
 
 
 # Bar has no budget line. Restaurant plus Bar tracks the Restaurant budget,
@@ -221,7 +257,7 @@ def labor_department(raw: str) -> str:
     """Return the canonical labor department for a raw label."""
     try:
         return LABOR_DEPARTMENT[raw.strip().lower()]
-    except KeyError:
+    except (KeyError, AttributeError):
         raise UnmappedLabel(f"labor department {raw!r} is not mapped") from None
 
 
@@ -230,7 +266,7 @@ def normalise_location(raw: str, venue_names: list[str]) -> str:
     by_key = {name.lower(): name for name in venue_names}
     try:
         return by_key[raw.strip().lower()]
-    except KeyError:
+    except (KeyError, AttributeError):
         raise UnmappedLabel(f"location_name {raw!r} is not a known venue") from None
 
 
@@ -257,6 +293,7 @@ def labor_shift_measures(df: pd.DataFrame) -> pd.DataFrame:
     )
 
 
+EVENT_RECORD_TYPES = {"EVENT", "LEAD"}
 EVENT_STATUS_COUNTS = {
     "Definite": True,
     "Tentative": False,
@@ -270,6 +307,8 @@ def is_countable_event(record_type: str, status: str) -> bool:
     """Return whether a private events row is booked revenue (Definite events)."""
     if status not in EVENT_STATUS_COUNTS:
         raise UnmappedLabel(f"booking_status {status!r} is not mapped")
+    if record_type not in EVENT_RECORD_TYPES:
+        raise UnmappedLabel(f"record_type {record_type!r} is not mapped")
     return record_type == "EVENT" and EVENT_STATUS_COUNTS[status]
 
 

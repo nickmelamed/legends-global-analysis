@@ -48,6 +48,9 @@ ROLLUPS = [
 ]
 
 
+MISSING_RATE_COLS = ["missing_rate_shifts", "missing_rate_hours"]
+
+
 class LoadError(RuntimeError):
     """The load cannot produce a trustworthy database."""
 
@@ -98,9 +101,15 @@ def read_sources(data_dir: Path) -> dict[str, pd.DataFrame]:
     return frames
 
 
-def _ticket_tables(src, checks):
+def _ticket_tables(src, venues, checks):
     raw = src["fact_ticket"].copy()
     raw["ingestion_ts"] = pd.to_datetime(raw["ingestion_ts"])
+    checks.add(
+        "ticket_duplicate_loads_agree",
+        "blocking",
+        rules.conflicting_duplicate_loads(raw),
+        "ticket_line_id copies that differ in more than ingestion_ts",
+    )
     tickets, dropped = rules.dedup_ticket_loads(raw)
     checks.add(
         "ticket_duplicate_loads_dropped",
@@ -124,12 +133,22 @@ def _ticket_tables(src, checks):
     if unjoined.any():
         return None, None
     tickets["is_countable"] = rules.countable_ticket_mask(tickets)
+    tz = venues.set_index("venue_code")["timezone"]
+    checks.add(
+        "ticket_event_time_matches_event_date",
+        "warn",
+        sum(
+            rules.ticket_event_time_mismatches(rows, tz[venue])
+            for venue, rows in tickets.groupby("attraction_prefix")
+        ),
+        "lines whose event_time, converted to local, is not on event_date",
+    )
     fact = pd.DataFrame(
         {
             "ticket_line_id": tickets["ticket_line_id"],
             "venue_code": tickets["attraction_prefix"],
             "source_system": tickets["source_system"],
-            "event_date": pd.to_datetime(tickets["event_date"]).dt.date,
+            "event_date": rules.ticket_business_dates(tickets),
             "date_sold": pd.to_datetime(tickets["date_sold"]).dt.date,
             "package_id": tickets["package_id"],
             "package_class": tickets["package_class"],
@@ -272,6 +291,7 @@ def _labor_tables(src, venues, checks):
     payroll = fact.groupby(keys)["payroll_cents"].sum(min_count=1)
     daily["payroll_cents"] = payroll.to_numpy()
     daily["payroll_cents"] = daily["payroll_cents"].astype("Int64")
+    daily = daily[keys + ["hours", "payroll_cents", "shifts"] + MISSING_RATE_COLS]
     return fact.drop(columns="missing_rate_hours"), daily
 
 
@@ -310,7 +330,7 @@ def transform(src: dict[str, pd.DataFrame], today: date) -> tuple[dict, Checks]:
     venues = src["dim_venue"][
         ["venue_code", "venue_name", "city", "state", "timezone", "location_id"]
     ].copy()
-    ticket_fact, daily_tickets = _ticket_tables(src, checks)
+    ticket_fact, daily_tickets = _ticket_tables(src, venues, checks)
     if ticket_fact is None:
         return {}, checks
     pos_fact, daily_pos = _pos_tables(src, venues, checks)

@@ -1,3 +1,5 @@
+from datetime import date
+
 import pandas as pd
 import pytest
 
@@ -103,3 +105,43 @@ def test_zero_value_pass_visit_and_no_show_count():
 def test_unknown_package_class_fails_loudly():
     with pytest.raises(rules.UnmappedLabel):
         rules.is_countable_ticket("NT", "CONFIRMED", "BUNDLE")
+
+
+def test_ticket_business_date_is_event_date_not_the_utc_time():
+    # NT event_time is UTC. 02:30 UTC on 09-29 is the evening of 09-28 in
+    # Denver, which is what event_date already says.
+    df = pd.DataFrame(
+        [
+            ticket(
+                event_date=pd.Timestamp("2026-09-28"),
+                event_time=pd.Timestamp("2026-09-29 02:30"),
+            )
+        ]
+    )
+    assert rules.ticket_business_dates(df).tolist() == [date(2026, 9, 28)]
+    assert rules.ticket_event_time_mismatches(df, "America/Denver") == 0
+
+
+def test_event_time_that_disagrees_with_event_date_is_counted():
+    df = pd.DataFrame(
+        [
+            ticket(
+                event_date=pd.Timestamp("2026-09-28"),
+                event_time=pd.Timestamp("2026-09-30 16:00"),
+            ),
+            ticket(
+                source_system="LT",
+                ticket_status="In Process",
+                event_date=pd.Timestamp("2025-09-28"),
+                event_time=pd.Timestamp("2025-09-28 20:30"),
+            ),
+        ]
+    )
+    assert rules.ticket_event_time_mismatches(df, "America/Denver") == 1
+
+
+def test_duplicate_loads_that_differ_beyond_ingestion_ts_are_counted():
+    same = [ticket(), ticket(ingestion_ts=pd.Timestamp("2026-06-09 06:00"))]
+    assert rules.conflicting_duplicate_loads(pd.DataFrame(same)) == 0
+    differ = [ticket(), ticket(ingestion_ts=pd.Timestamp("2026-06-09"), quantity=5)]
+    assert rules.conflicting_duplicate_loads(pd.DataFrame(differ)) == 1
