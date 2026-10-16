@@ -70,7 +70,7 @@ Keep a Changelog, and versions follow Semantic Versioning.
   check.
 - The Stop gate also runs `make numbers` on the write-up and the
   reconciliation notes.
-- CI runs `make ci` on every push and pull request.
+- CI runs `make ci` on pull requests and pushes to main.
 - The list of deferred work moved from docs/BACKLOG.md to the write-up.
 
 ### Fixed

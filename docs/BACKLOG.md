@@ -36,11 +36,14 @@ recommend, show the evidence and leave the action to a person.
 ## What to build first
 
 1. A load health page for Priya. The `data_quality` table already records
-   every check on every run (duplicates dropped, missing rates, missing
-   venue-days). The data is already there, so it is a small build.
+   every check of the latest successful load (duplicates dropped, missing
+   rates, missing venue-days). The page also needs run history kept across
+   loads and failed runs recorded, which the load does not do yet.
 2. An overtime flag for Marcus. Actual hours against the schedule, by
-   week, checked daily. The labor and schedule sheets already have what it
-   needs. Run daily, it would flag an overtime week before payroll closes.
+   week, checked daily. Overtime is per person, and the database keeps no
+   person ids (D-009), so the load would need a per-person weekly hours
+   rollup or a pseudonymous key, with the same care for guest and staff
+   data. Run daily, it would flag an overtime week before payroll closes.
 3. Put the Overview, which already works on a phone, and the Ask prototype
    in front of Marcus and watch what he types.
 4. Weather on the attendance chart from the cached sheet, to test whether

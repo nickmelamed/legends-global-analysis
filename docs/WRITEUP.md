@@ -30,9 +30,9 @@ flowchart LR
 The load reads the five workbooks, applies the rules in `pipeline/rules.py`
 and writes daily rollups by venue, department, package class and channel.
 It writes to a temporary file and swaps it in only when every blocking
-check passes, so a bad load leaves yesterday's numbers in place. Each check
-is a row in a `data_quality` table, so every run records what it dropped
-and why. The rules live in one module with a unit test each, and neither
+check passes, so a bad load leaves yesterday's numbers in place. Each check is a row in a `data_quality` table, so the latest successful
+load records what it dropped and why. A failed load reports only to the
+console, and earlier runs are not kept. The rules live in one module with a unit test each, and neither
 the API nor the frontend repeats them.
 
 The API is FastAPI. Every route, the CSV export and the AI tools included,
@@ -110,9 +110,9 @@ fixture for every rule. The load runs blocking checks on the real data on
 every run, such as POS subtotals matching their lines and duplicate loads
 agreeing. `make reconcile` compares the week with the Power BI targets in
 `tests/fixtures/pbi_targets.json`. 23 of 24 targets match, all eight for
-Summit, and the one miss is R-001. A slow test checks Summit's week through
-the API as well, so a change that moves the page's Summit numbers away from the
-reconciliation fails a test.
+Summit, and the one miss is R-001. A slow test checks Summit's week through the API as well, so a change that
+moves the page's Summit numbers away from the reconciliation fails that
+test locally.
 `make numbers` checks that every decimal and percentage in these docs
 appears in a generated report.
 
@@ -125,8 +125,11 @@ there is no data and that it "shouldn't be read as zero visitors", but the
 case forbids the word "zero". I left it failing. The check needs fixing, and the expected answer stays
 as written.
 
-In CI, `make ci` runs lint, types, tests and style on every push. In
-production the same reconciliation would run after each nightly load
+CI runs `make ci` (lint, types, tests and style) on pull requests and
+pushes to main, but it has not run on GitHub yet. The supplied data is not
+in git, so CI cannot run the real-data test, the reconciliation, the evals
+or `make numbers`. Those run locally, and the last of them in the gate
+before every agent turn ends. In production the same reconciliation would run after each nightly load
 against figures Finance signs off, and a miss would block the swap and
 alert the owner instead of publishing.
 
@@ -194,7 +197,9 @@ the target, loosen the test or tweak a rule until they match. Each of those hide
 
 - Entra sign-in, and removing the dev user header.
 - A metric-level grounding check that ties each number to its label.
-- Fixing the `missing_day` eval case, which fails on the word "zero".
+- The `missing_day` eval case fails on the word "zero" in a correct
+  answer. Changing its forbidden-phrase check is an eval design change for
+  Nick to decide.
 - The other tabs (Ticketing, F&B, Merchandise, Events, Pacing Report,
   Cost Watch, Support, Settings). They are routes that keep the filters.
 - The load health page and the overtime flag, first in the backlog.
