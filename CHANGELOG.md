@@ -23,6 +23,17 @@ Keep a Changelog, and versions follow Semantic Versioning.
 - docs/RECONCILIATION.md (R-001 to R-004), docs/DATA_ISSUES.md and D-009.
 - `pyproject.toml` with pandas, duckdb, python-calamine, pytest, hypothesis
   and ruff.
+- Rules for the Last Week, Month to Date and Year to Date presets, the last
+  elapsed day, the aligned comparison end, the cutover flag, a None-safe
+  ratio and percent change, and pace status thresholds.
+- `api/`: FastAPI over the DuckDB rollups with `/api/filters`,
+  `/api/overview`, `/api/trend`, `/api/freshness` and `/api/export.csv`.
+  One scope helper binds the venue filter in every query, and an
+  out-of-scope venue is a 403. Tests cover every route as a restricted user,
+  and a slow test checks the overview against the Power BI targets.
+- Decisions D-010 (ticket filters), D-011 (date presets end yesterday) and
+  D-012 (no delta or pace colour over missing data).
+- fastapi and uvicorn dependencies, with httpx declared for the test client.
 
 ### Changed
 

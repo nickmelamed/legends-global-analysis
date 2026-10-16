@@ -96,3 +96,48 @@ on docs/RECONCILIATION.md alone.
 
 Time: 19.8 active minutes against a 50 minute budget.
 
+
+## Phase 3: API (2026-10-16 06:09 to 09:25, paused 06:23 to 09:22)
+
+Asked: start the timer and plan Phase 3. Nick ruled on three questions in
+plan mode. Ticket filters apply to ticket metrics only (D-010). Presets end
+yesterday (D-011). fastapi and uvicorn may be added.
+
+Produced: `api/` (settings, auth, scope, windows, queries, overview, trend,
+main) with `/api/filters`, `/api/overview`, `/api/trend`, `/api/freshness`
+and `/api/export.csv`. Window and ratio rules were added to
+`pipeline/rules.py`. The tests are a synthetic DuckDB fixture, a scope test
+that enumerates every `/api` route as marcus@dev, and a slow test that
+matches Summit's week to the Power BI targets through the API. There are 197
+tests in all. D-010, D-011 and D-012.
+
+Changed or rejected: the API tests were written after the code, not before.
+To check they were not hollow, Claude broke the scope check (15 tests
+failed) and the no-data handling (2 failed), then restored both. The first
+smoke run left private events out of total revenue, because `events_cents`
+was never set. The real-data check against the targets caught it before any
+commit. Claude also added `httpx` to the dev dependencies without asking.
+It was installed but undeclared, and the test client needs it.
+
+The spec reviewer found these, and all were fixed with failing tests first:
+- A custom range running past yesterday counted presales and booked
+  future events as actuals.
+- Comparison windows with missing days gave a delta with no flag.
+- Private events showed $0 before the data started.
+- Week and month trend comparisons were misaligned.
+- Freshness hid a stale venue when several were selected.
+- Elapsed-day logic lived in `api/` instead of `rules.py`.
+- Pace kept a colour over a gap.
+
+That fix also changed Summit's prior-week total in the smoke output from
+$64,106 to $86,362, since private events had been missing from comparison
+totals too. The style reviewer's 12 rewrites were applied.
+
+What went wrong: the private events bug above, which the hand-worked
+fixture tests also missed, because the fixture's prior week had no event.
+`make ci` still fails at typecheck because `web/` does not exist. The plan's
+"load older than a threshold" staleness check was dropped. The load time is
+wall-clock time and APP_TODAY is simulated, so comparing them means nothing.
+Staleness is the latest data day per venue and feed against APP_TODAY − 1.
+
+Time: 16.3 active minutes against a 20 minute budget.

@@ -183,3 +183,65 @@ query.
 Consequences. Measures that need these fields, such as orders per guest or
 average check, need the load changed first. Average check needs an order
 count, which can be added as a count column without the ids.
+
+## D-010: Package class and channel filters apply to ticket metrics only (2026-10-16)
+
+Context. The packet lists package class and sales channel as global
+filters, but they only exist on ticket rows. F&B, merchandise, private
+events and labor have no package class or channel.
+
+Decision. The filters change attendance, ticket revenue, ATP and the Ticket
+department bar. Total revenue, per cap, labor, the other departments and the
+revenue trend use every ticket. Each metric in `/api/overview` carries
+`ticket_filtered`, and the response lists `ticket_filter_applies_to`, so the
+UI can label the tiles. Pace to plan is null for filtered metrics.
+
+Why. Total revenue built from filtered tickets plus unfiltered F&B would be a
+number that means nothing. Per cap needs total revenue and attendance from the
+same guests. The budget has no class or channel split, so a filtered pace
+would compare a slice with the whole plan. Nick chose this over letting the
+filter flow into total revenue.
+
+Consequences. With a filter set, per cap does not equal total revenue over
+the attendance tile shown next to it. The UI has to say so on the tile.
+
+## D-011: Date presets end yesterday (2026-10-16)
+
+Context. With APP_TODAY 2026-10-05, the data runs through 2026-10-04. Today's
+business day runs to 4 AM tomorrow, so it has not closed.
+
+Decision. Every preset ends the day before APP_TODAY, the last complete business day.
+`days_total` is the whole week, month or year, and `days_elapsed` counts the
+days up to yesterday. On the first of a month, Month to Date is the whole
+previous month. Pace compares actual and budget over the elapsed days only,
+including in a custom range that runs into the future.
+
+Why. A window that includes today would show a partial day as a dip. Nick
+chose this.
+
+Consequences. On 2026-10-05, Month to Date is 2026-10-01 to 2026-10-04 (4 of
+31 days). Its prior period is 2026-09-27 to 2026-09-30. A custom range that
+runs past yesterday shows actuals up to yesterday only, since tickets hold
+presales and private events hold future bookings. Its comparison covers the
+same number of days from the comparison start.
+
+## D-012: No delta or pace colour over missing data (2026-10-16)
+
+Context. A window can hold a no-data day, such as RTL 2026-04-18, and a
+comparison window can start before the data does (2025-01-01). Summing what
+is there makes the missing days look like a drop or a rise.
+
+Decision. Each metric carries `data_gap` and `comparison_data_gap`. When
+either is set, `delta_pct` is null. The current and comparison values are
+still returned with their flags. Pace keeps its percentage but has no
+green, amber or red status over a gap. Private events have no feed of their
+own, so a day counts as loaded for them when any feed covers the venue that
+day. Outside those days they are no data, not $0.
+
+Why. Rule 4 says missing data never shows as a dip. A percentage change
+over different amounts of data is not a change in the business.
+
+Consequences. RTL's week of 2026-04-13 shows total revenue and attendance
+with a gap flag and no delta. Labor, which has rows that day, keeps its
+delta. The spec reviewer found the original behaviour, and Nick has not yet
+ruled on it.
