@@ -104,6 +104,16 @@ test("the logo is the black file on light and the white file on dark", async ({ 
 test("the cutover note takes its date from the API", async ({ page }) => {
   await page.goto("/overview?preset=year_to_date&compare_mode=last_year");
   await expect(page.getByTestId("cutover")).toContainText("Feb 3, 2026");
+  // A different date from the API must show, so the page cannot hardcode it.
+  await page.route(/\/api\/overview\?/, async (route) => {
+    const res = await route.fetch();
+    const body = await res.json();
+    body.window.cutover_date = "2025-07-15";
+    await route.fulfill({ response: res, json: body });
+  });
+  await page.reload();
+  await expect(page.getByTestId("cutover")).toContainText("Jul 15, 2025");
+  await expect(page.getByTestId("cutover")).not.toContainText("Feb 3, 2026");
 });
 
 test("the phone drawer closes on Escape", async ({ page }) => {
@@ -113,8 +123,10 @@ test("the phone drawer closes on Escape", async ({ page }) => {
   await page.getByRole("button", { name: "Open menu" }).click();
   const sidebar = page.getByRole("complementary", { name: "Navigation and filters" });
   await expect(sidebar).toHaveClass(/open/);
+  await sidebar.getByRole("link", { name: "Overview" }).focus();
   await page.keyboard.press("Escape");
   await expect(sidebar).not.toHaveClass(/open/);
+  await expect(page.getByRole("button", { name: "Open menu" })).toBeFocused();
 });
 
 for (const width of [390, 1440]) {

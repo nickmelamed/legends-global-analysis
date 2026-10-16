@@ -21,7 +21,13 @@ export function App() {
   const opts = options.state === "ok" ? options.data : null;
   useEffect(() => {
     if (!drawer) return;
-    const close = (e: KeyboardEvent) => e.key === "Escape" && setDrawer(false);
+    const close = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      setDrawer(false);
+      // Focus was inside the drawer, which is now hidden, so hand it back to
+      // the button that opened it.
+      document.querySelector<HTMLButtonElement>(".menu-button")?.focus();
+    };
     window.addEventListener("keydown", close);
     return () => window.removeEventListener("keydown", close);
   }, [drawer]);
