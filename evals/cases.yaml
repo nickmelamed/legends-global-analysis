@@ -1,7 +1,8 @@
 # Ask the data eval cases. APP_TODAY is 2026-10-05, so last week is
 # 2026-09-28 to 2026-10-04. Expected figures come from the API on the loaded
 # database and agree with build/reports/reconciliation.md. Never edit an
-# expected value to make a case pass (CLAUDE.md rule 2).
+# expected value to make a case pass. If the API disagrees, record the gap in
+# docs/RECONCILIATION.md.
 #
 # figures: every value must appear in the answer, at any display precision.
 # figures_any: at least one must appear.

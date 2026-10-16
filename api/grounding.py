@@ -63,8 +63,8 @@ def _leaves(obj, numbers: list[float], dates: set[date]) -> None:
 
 
 def _rounded(value: float, places: int) -> set[Decimal]:
-    # Half up is how people round. Half even is what Python's format() does
-    # to a float, so a reply may use either.
+    # Half up is how people round. format() rounds a float's exact binary
+    # value with ties to even. Accept either.
     exp = Decimal(1).scaleb(-places)
     return {
         Decimal(repr(value)).quantize(exp, ROUND_HALF_UP),

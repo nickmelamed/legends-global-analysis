@@ -3,8 +3,8 @@
 Each tool resolves its window with ``api.windows`` and reads the same
 ``overview.build`` result the Overview page shows, so an answer and the page
 cannot disagree. No tool takes a venue. The venues are the request's scope.
-Outputs are built from an allowlist of fields, rounded the way the page shows
-them, so the model copies figures and never has to compute one.
+Outputs are built from an allowlist of fields and rounded to two decimals, so
+the model copies figures and never has to compute one.
 """
 
 from __future__ import annotations

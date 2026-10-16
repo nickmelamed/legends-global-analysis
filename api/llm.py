@@ -28,7 +28,7 @@ class NoRecording(LLMError):
 
 
 class LLMClient(Protocol):
-    """One model turn: send the conversation, get the next message."""
+    """A client that returns the model's next message for a conversation."""
 
     model: str
 

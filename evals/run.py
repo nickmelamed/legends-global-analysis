@@ -1,11 +1,11 @@
 """Run the Ask the data cases and write ``build/reports/evals.md``.
 
-``python -m evals.run`` replays ``evals/recordings/`` and costs nothing.
+``python -m evals.run`` replays ``evals/recordings/`` with no API calls.
 ``python -m evals.run --record`` calls the Claude API with the key in
 ``ANTHROPIC_API_KEY`` (or ``.env``) and writes new recordings first.
 
 Grading is deterministic: status code, required figures at any display
-precision, phrases, and whether the model was called. No model grades a model.
+precision, phrases, and whether the model was called.
 """
 
 from __future__ import annotations

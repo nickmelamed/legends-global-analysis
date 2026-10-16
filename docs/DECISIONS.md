@@ -298,7 +298,9 @@ Decision. `POST /api/ask` runs a tool loop of at most four turns. The tools
 and return an allowlist of fields rounded for display. Each tool takes an
 enum period (`last_week`, `month_to_date`, `year_to_date`, `custom` with
 dates) and an enum comparison, not free text. None takes a venue. The
-venues are the request's scope. Before any model call, a question that
+venues are the request's scope.
+
+Before any model call, a question that
 names a venue outside the user's scope gets a 403, and one that names an
 unselected venue gets a fixed reply asking the user to change the filter.
 `api/grounding.py` then checks every number and date in the reply against
@@ -307,9 +309,9 @@ not in the outputs, a model error, a refusal or a missing recording returns
 the tool results as a table instead.
 
 Why. With an enum the model cannot invent a period, and the dates come from
-`pipeline.rules`. A strict check is easy to explain and to test. It rejects
-a correct sum the model worked out itself, so the tools return the change
-and percent change ready-made. The data holds no guest or free-text fields
+`pipeline.rules`. The check is strict and easy to test. It rejects even a
+correct sum the model works out, so the tools return change and percent
+change precomputed. The data holds no guest or free-text fields
 (D-009), so the only untrusted text that reaches the model is the
 question, and the question cannot widen scope because no tool accepts a
 venue.
@@ -337,9 +339,10 @@ fallback.
 
 Why. Nick chose Opus 5.5 for its judgment on the refusal and injection
 cases. At $4 and $20 per million input and output tokens (pricing page read
-2026-10-16), a question with two or three turns is several cents. The eval
-report gives the measured figure.
+2026-10-16), a question with two or three turns costs a few cents.
+build/reports/evals.md gives the measured mean.
 
 Consequences. An unrecorded question with the default client always gets
 the table. Re-record after changing the system prompt, the tools or the
-cases.
+cases. Until the first `make evals RECORD=1` run is committed, `make evals`
+fails every case that needs the model.
