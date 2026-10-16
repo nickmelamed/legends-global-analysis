@@ -51,6 +51,7 @@ agent-check:
 	pytest -x -q -m "not slow"
 	npm --prefix web run typecheck
 	$(PY) scripts/agent/check_style.py .
+	$(MAKE) numbers
 
 ci: lint typecheck test style
 	$(PY) scripts/agent/check_tests.py --warn

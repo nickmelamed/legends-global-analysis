@@ -21,6 +21,14 @@ jobs:
         run: python3 scripts/agent/check_style.py --changed .
       - name: Test weakening (reported, approved in review)
         run: python3 scripts/agent/check_tests.py --warn
-      # Enable once the Makefile's tools are set up for this repo.
-      # - name: Project checks
-      #   run: make setup && make ci
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      # Not make setup, which also installs the pre-commit hooks. The
+      # supplied data/ is not in git, so the one test that needs the database
+      # skips here and runs locally after make load.
+      - name: Project checks
+        run: |
+          pip install -e ".[dev]"
+          npm --prefix web ci
+          make ci
