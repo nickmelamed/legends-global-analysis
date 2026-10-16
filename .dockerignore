@@ -1,6 +1,6 @@
 # Secrets and local state never enter an image.
-.env
-.env.*
+**/.env
+**/.env.*
 .git
 build
 data

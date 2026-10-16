@@ -1,16 +1,14 @@
 # Loads the workbooks into build/attractions.duckdb, then serves the api and
 # the web app on port 8080.
 
-x-env: &env
-  env_file:
-    - path: .env.example
-    - path: .env
-      required: false
-
 services:
   load:
-    build: { context: ., dockerfile: docker/api.Dockerfile }
-    <<: *env
+    image: attractions-api:local
+    # Built by the api service, never in a registry.
+    pull_policy: never
+    # Only the setting the load uses, so the API key never reaches it.
+    environment:
+      APP_TODAY: ${APP_TODAY:-2026-10-05}
     command: ["python", "-m", "pipeline.load"]
     volumes:
       - ./data:/app/data:ro
@@ -18,7 +16,11 @@ services:
 
   api:
     build: { context: ., dockerfile: docker/api.Dockerfile }
-    <<: *env
+    image: attractions-api:local
+    env_file:
+      - path: .env.example
+      - path: .env
+        required: false
     depends_on:
       load: { condition: service_completed_successfully }
     volumes:

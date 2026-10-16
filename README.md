@@ -32,6 +32,10 @@ the files supplied with the packet.
    starts when the load succeeds and `web` serves the app. A cold build
    took 80 seconds on a laptop and the stack was serving 6 seconds later.
 
+   On Linux the `load` container runs as root, so `build/` ends up owned by
+   root. Run `sudo chown -R "$USER" build` before a later `make load` on
+   the host.
+
 3. Open http://localhost:8080. The API is also at http://localhost:8000.
 
 Settings come from `.env.example`. To change one, `cp .env.example .env` and
