@@ -203,11 +203,11 @@ Follow-up after review (same day): Nick asked for the items left open.
 - The window in every response carries `cutover_date` from
   `rules.CUTOVER_DATE`, and the cutover note shows it rather than a fixed
   string.
-- On a phone the Help link is labelled "Help & Support" for screen
-  readers.
+- The Help link has an accessible name. On a phone its text is hidden, so
+  it had none.
 - The drawer closes on Escape.
-- New e2e tests cover the Day/Week/Month toggle (it checks that the
-  request asks for the new grain), the ticket-filter tag, the logo file per
-  theme, the cutover date and Escape. The grain, tag and logo tests passed
+- New e2e tests cover the Day/Week/Month toggle (by the grain in the
+  request), the ticket-filter tag, the logo file per theme, the cutover
+  date and Escape. The grain, tag and logo tests passed
   on the existing code. The cutover and Escape tests failed first.
 - A `mutation-check` skill was added at Nick's request.
