@@ -36,7 +36,7 @@ reconcile:
 	$(PY) -m pipeline.reconcile
 
 evals:
-	$(PY) -m evals.run
+	$(PY) -m evals.run $(if $(RECORD),--record)
 
 up:
 	docker compose up --build
