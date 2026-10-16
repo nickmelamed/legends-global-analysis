@@ -91,3 +91,61 @@ def test_pace_status_thresholds(pct, status):
 def test_pct_change_is_none_without_a_comparison(current, comparison, expected):
     result = rules.pct_change(current, comparison)
     assert result == pytest.approx(expected) if expected is not None else result is None
+
+
+def test_last_complete_day_is_yesterday():
+    assert rules.last_complete_day(date(2026, 10, 5)) == date(2026, 10, 4)
+
+
+@pytest.mark.parametrize(
+    ("start", "end", "expected"),
+    [
+        (date(2026, 9, 28), date(2026, 10, 4), date(2026, 10, 4)),
+        (date(2026, 9, 28), date(2026, 10, 31), date(2026, 10, 4)),
+        (date(2026, 10, 4), date(2026, 10, 4), date(2026, 10, 4)),
+        (date(2026, 10, 5), date(2026, 10, 31), None),
+    ],
+)
+def test_elapsed_end_stops_at_yesterday(start, end, expected):
+    assert rules.elapsed_end(start, end, date(2026, 10, 5)) == expected
+
+
+@pytest.mark.parametrize(
+    ("start", "end", "cmp", "expected"),
+    [
+        (
+            date(2026, 9, 28),
+            date(2026, 10, 4),
+            (date(2025, 9, 29), date(2025, 10, 5)),
+            False,
+        ),
+        (
+            date(2026, 2, 2),
+            date(2026, 2, 8),
+            (date(2025, 2, 3), date(2025, 2, 9)),
+            True,
+        ),
+        (
+            date(2027, 2, 1),
+            date(2027, 2, 7),
+            (date(2026, 2, 2), date(2026, 2, 8)),
+            True,
+        ),
+        (date(2026, 1, 1), date(2026, 10, 4), (None, None), True),
+        (date(2026, 9, 28), date(2026, 10, 4), (None, None), False),
+    ],
+)
+def test_comparison_crosses_cutover(start, end, cmp, expected):
+    assert rules.comparison_crosses_cutover(start, end, *cmp) is expected
+
+
+def test_comparison_elapsed_end_matches_the_elapsed_length():
+    assert rules.comparison_elapsed_end(
+        date(2026, 9, 28), date(2026, 10, 4), date(2026, 8, 25)
+    ) == date(2026, 8, 31)
+    assert (
+        rules.comparison_elapsed_end(date(2026, 9, 28), None, date(2026, 8, 25)) is None
+    )
+    assert (
+        rules.comparison_elapsed_end(date(2026, 9, 28), date(2026, 10, 4), None) is None
+    )

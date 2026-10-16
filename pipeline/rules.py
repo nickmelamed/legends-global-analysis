@@ -387,11 +387,49 @@ def year_to_date(today: date) -> tuple[date, date, int]:
     return start, end, (start.replace(year=start.year + 1) - start).days
 
 
-def ratio(numerator: float | None, denominator: float | None) -> float | None:
-    """Return numerator / denominator, or None when either is missing or zero.
+def last_complete_day(today: date) -> date:
+    """Return yesterday, the last business day that has closed (D-011)."""
+    return today - timedelta(days=1)
 
-    Missing data is not zero, so a ratio over no data is None, not 0.
+
+def elapsed_end(start: date, end: date, today: date) -> date | None:
+    """Return the last day of the window that has happened, or None if none has.
+
+    Actuals and pace cover ``start`` to this day only, so presales and booked
+    future events never count as actuals.
     """
+    last = last_complete_day(today)
+    return min(end, last) if start <= last else None
+
+
+def comparison_elapsed_end(
+    start: date, elapsed: date | None, cmp_start: date | None
+) -> date | None:
+    """Return the comparison day that lines up with the last elapsed day.
+
+    Both sides then cover the same number of days.
+    """
+    if elapsed is None or cmp_start is None:
+        return None
+    return cmp_start + (elapsed - start)
+
+
+def comparison_crosses_cutover(
+    start: date, end: date, cmp_start: date | None, cmp_end: date | None
+) -> bool:
+    """Return whether the current or comparison window spans the cutover.
+
+    Package names and channels change at the cutover, so either window
+    spanning it makes a name-level comparison unsafe. Package class is the
+    stable key (H4).
+    """
+    if crosses_cutover(start, end):
+        return True
+    return cmp_start is not None and crosses_cutover(cmp_start, cmp_end)
+
+
+def ratio(numerator: float | None, denominator: float | None) -> float | None:
+    """Return numerator / denominator, or None when either is missing or zero."""
     if numerator is None or denominator is None or denominator == 0:
         return None
     return numerator / denominator
