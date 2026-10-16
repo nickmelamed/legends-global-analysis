@@ -2,8 +2,8 @@
 
 Run with ``python -m pipeline.reconcile`` after the load. Writes
 ``build/reports/reconciliation.md`` and ``reconciliation.json``, and exits
-non-zero if a required venue misses. Targets are never adjusted here. Every
-miss is explained in docs/RECONCILIATION.md.
+non-zero if a required venue misses. Misses are explained in
+docs/RECONCILIATION.md.
 """
 
 from __future__ import annotations
@@ -147,9 +147,9 @@ def _fmt_diff(measure: str, diff: float | None) -> str:
 
 def _payroll_note(d: dict) -> str:
     if d["payroll_missing_rate_shifts"] == 0:
-        return "Payroll is complete: every shift has a rate."
+        return "Payroll is complete. Every shift has a rate."
     return (
-        f"Payroll is incomplete: {d['payroll_missing_rate_shifts']} shift(s) "
+        f"Payroll is incomplete. {d['payroll_missing_rate_shifts']} shift(s) "
         f"and {d['payroll_missing_rate_hours']:.2f} hours have no rate."
     )
 

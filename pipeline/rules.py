@@ -16,8 +16,6 @@ class UnmappedLabel(ValueError):
     """A source value that no rule knows how to treat."""
 
 
-# Tickets
-
 # Each source system has its own status vocabulary. Cancelled lines keep their
 # full quantity and value and record_status is ACTIVE on every row, so the
 # status text is the only cancellation signal (DATA_PROFILE.md H2).
@@ -89,14 +87,12 @@ def dedup_ticket_loads(df: pd.DataFrame) -> tuple[pd.DataFrame, int]:
     return out.sort_index(), len(df) - len(out)
 
 
-# Time
-
 BUSINESS_DAY_CUTOFF_HOUR = 4
 SOURCE_ZONE_UTC = "UTC"
 SOURCE_ZONE_LOCAL = "local"
 # NT event_time is UTC and LT event_time is venue local. POS timestamps are
-# all local: each outlet has sharp local opening hours with nothing outside
-# them (H6). Ticket rows use event_date, which is already the local date.
+# all local, since each outlet has sharp local opening hours with nothing
+# outside them (H6). Ticket rows use event_date, which is already the local date.
 POS_TIMESTAMP_ZONE = SOURCE_ZONE_LOCAL
 TICKET_EVENT_TIME_ZONE = {"LT": SOURCE_ZONE_LOCAL, "NT": SOURCE_ZONE_UTC}
 
@@ -123,8 +119,6 @@ def business_dates(local_ts: pd.Series) -> pd.Series:
     shifted = local_ts - pd.Timedelta(hours=BUSINESS_DAY_CUTOFF_HOUR)
     return shifted.dt.date
 
-
-# POS
 
 # Bar has no budget line. Restaurant plus Bar tracks the Restaurant budget,
 # and both sell alcohol with a 20% gratuity (D-003).
@@ -198,8 +192,6 @@ def order_subtotal_mismatches(df: pd.DataFrame) -> int:
     return int((per_order["net"] != per_order["subtotal"]).sum())
 
 
-# Labor
-
 # Raw labels after strip and lower-case. "Food & Beverage" holds only Host,
 # Server, Busser and Bartender shifts, the restaurant positions (H7).
 LABOR_DEPARTMENT = {
@@ -265,8 +257,6 @@ def labor_shift_measures(df: pd.DataFrame) -> pd.DataFrame:
     )
 
 
-# Private events
-
 EVENT_STATUS_COUNTS = {
     "Definite": True,
     "Tentative": False,
@@ -304,8 +294,6 @@ def private_event_revenue(df: pd.DataFrame) -> pd.DataFrame:
     )
 
 
-# Calendar
-
 # Ticketing moved from LT to NT on this date. Package names change across it,
 # so last-year comparisons use package_class (H4).
 CUTOVER_DATE = date(2026, 2, 3)
@@ -335,8 +323,6 @@ def crosses_cutover(start: date, end: date) -> bool:
     """Return whether a window holds days from both ticketing systems."""
     return start < CUTOVER_DATE <= end
 
-
-# Missing data
 
 FEED_OK = "ok"
 FEED_NO_DATA = "no_data"

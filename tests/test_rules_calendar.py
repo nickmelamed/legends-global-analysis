@@ -69,9 +69,9 @@ def test_crosses_cutover(start, end, crosses):
     ("outlet_rows", "venue_rows", "revenue", "expected"),
     [
         (True, True, 125.0, 125.0),
-        # Bar quiet while the venue's other outlets traded: a real zero (D-007).
+        # A quiet Bar on a day its venue traded is a real zero (D-007).
         (False, True, None, 0.0),
-        # Nothing from the venue at all that day: a missing feed (D-005).
+        # No rows from the venue that day is a missing feed (D-005).
         (False, False, None, None),
     ],
 )

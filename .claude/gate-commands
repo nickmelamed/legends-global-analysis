@@ -2,7 +2,7 @@
 # per line, run from the repo root. The whole list must finish in about 18
 # minutes (the gate's budget), and a few minutes is the real target.
 #
-# Python checks from Phase 2. Switch to `make agent-check` once web/ exists,
+# Switch to `make agent-check` once web/ exists,
 # since it also runs the TypeScript typecheck. Add `make numbers` once
 # docs/WRITEUP.md exists.
 ruff check .

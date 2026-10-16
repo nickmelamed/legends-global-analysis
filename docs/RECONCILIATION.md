@@ -1,16 +1,15 @@
 # Reconciliation
 
-The reconciliation week is 2026-09-28 to 2026-10-04. `make load` then `make
-reconcile` writes `build/reports/reconciliation.md`, which compares our
+The reconciliation week is 2026-09-28 to 2026-10-04. Running `make load` and then
+`make reconcile` writes `build/reports/reconciliation.md`, which compares our
 unrounded figures with `tests/fixtures/pbi_targets.json`. Money and counts are
 rounded to the whole unit and hours to 0.1 before comparing. The targets are <!-- numbers: ok, Power BI display figures -->
 never edited.
 
 All 24 targets match except the Riverbend total revenue, which is $1 off
 because of how Power BI adds rounded components (R-001). Summit, the required
-venue, matches on all eight measures. R-002 to R-004 are differences between
-the app and other Power BI visuals, not target misses. The app keeps the
-correct figure in each case.
+venue, matches on all eight measures. R-002 to R-004 explain where other
+Power BI visuals differ from the app. None of them is a target miss.
 
 ## R-001: Riverbend total revenue is $1 below the target
 
