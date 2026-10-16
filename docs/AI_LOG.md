@@ -198,3 +198,16 @@ two of those tests would have passed with the feature broken. The Rule 4
 gap in the chart was only caught by the reviewer's own screenshot.
 
 Time: 16.8 active minutes against a 40 minute budget.
+
+Follow-up after review (same day): Nick asked for the items left open.
+- The window in every response carries `cutover_date` from
+  `rules.CUTOVER_DATE`, and the cutover note shows it rather than a fixed
+  string.
+- On a phone the Help link is labelled "Help & Support" for screen
+  readers.
+- The drawer closes on Escape.
+- New e2e tests cover the Day/Week/Month toggle (it checks that the
+  request asks for the new grain), the ticket-filter tag, the logo file per
+  theme, the cutover date and Escape. The grain, tag and logo tests passed
+  on the existing code. The cutover and Escape tests failed first.
+- A `mutation-check` skill was added at Nick's request.
