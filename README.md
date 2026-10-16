@@ -44,7 +44,11 @@ gitignored.
   `marcus@dev` sees only Summit Sky Deck. Requests can also send an
   `X-Dev-User` header. Asking for another venue's data returns 403.
 - `ASK_CLIENT=recorded` (default) replays the model answers in
-  `evals/recordings/`, so Ask works with no API key. `ASK_CLIENT=anthropic`
+  `evals/recordings/`, so no API key is needed. Only the questions in
+  `evals/cases.yaml` are recorded, each for the venue it was asked with
+  (Summit Sky Deck), for example "How did last week compare to last
+  year?". Any other question shows the figures as a table instead of an
+  answer. `ASK_CLIENT=anthropic`
   with `ANTHROPIC_API_KEY` set calls the API live.
 
 Check it:
@@ -61,7 +65,8 @@ Needs Python 3.12 and Node 20.
 ```bash
 make setup                                   # pip install -e ".[dev]", npm ci, pre-commit
 make load                                    # build/attractions.duckdb
-uvicorn api.main:app --reload                # http://localhost:8000
+cp -n .env.example .env                      # DEV_USER and the other settings
+uvicorn api.main:app --reload --env-file .env  # http://localhost:8000
 npm --prefix web run dev                     # http://localhost:5173, proxies /api
 ```
 
