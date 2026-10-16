@@ -94,3 +94,11 @@ docker compose up # load, then api and web
 - Commit in small atomic Conventional Commits. Code and its tests go in the
   same commit. Ask before pushing or changing dependencies.
 - If you repeat a multi-step procedure, propose a skill for it and wait.
+- Every subagent prompt that touches `data/` includes this sentence
+  verbatim: "Rule 6 applies to you: never print, return or write guest
+  personal data (customer_country values, order_id, person_id) or the
+  values of free-text fields (comments, notes, voided_reason,
+  lost_reason_name). Report counts, null counts and lengths only, and
+  identify rows by ticket_line_id, event_id or booking_id." Scripts the
+  subagent writes follow the same rule, since their output is read by a
+  model.
