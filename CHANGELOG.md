@@ -58,11 +58,20 @@ Keep a Changelog, and versions follow Semantic Versioning.
 - `evals/cases.yaml` with seven cases and `make evals` (`RECORD=1` to call
   the model), which writes build/reports/evals.md with cost per question.
 - Decisions D-015 (how answers are checked) and D-016 (model and recordings).
+- `docker compose up` runs the load once against the mounted `data/`, then
+  the api and the web app on port 8080. Secrets, `data/` and `build/` stay
+  out of the images.
+- README.md, from clone to running.
+- Drafts of docs/BACKLOG.md (Part B) and docs/WRITEUP.md (Part D).
 
 ### Changed
 
 - The Stop gate runs ruff and the fast pytest suite as well as the style
   check.
+- The Stop gate also runs `make numbers` on the write-up and the
+  reconciliation notes.
+- CI runs `make ci` on every push and pull request.
+- The list of deferred work moved from docs/BACKLOG.md to the write-up.
 
 ### Fixed
 
