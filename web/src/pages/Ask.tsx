@@ -52,8 +52,9 @@ export function Ask() {
         </button>
       </form>
       <p className="muted">
-        Every figure in an answer is checked against the data before it is shown. If a check
-        fails, you see the numbers only. The venue filter applies here. The question sets the
+        Every figure in an answer must appear in the data the answer looked up, or you see the
+        numbers only. The check matches values. It does not confirm which metric a figure
+        belongs to, so read the answer with the table. The venue filter applies here. The question sets the
         dates, so the date and ticket filters do not.
       </p>
       {error && <p className="error">{error}</p>}
@@ -63,7 +64,7 @@ export function Ask() {
             <>
               <p data-testid="answer">{reply.answer}</p>
               <p className="muted" data-testid="check">
-                Checked against the data
+                Every figure was found in the data
               </p>
             </>
           ) : (

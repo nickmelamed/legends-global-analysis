@@ -316,7 +316,17 @@ change precomputed. The data holds no guest or free-text fields
 question, and the question cannot widen scope because no tool accepts a
 venue.
 
-Consequences. Abbreviated amounts ("$84K") are always rejected. Questions
+Consequences. The check is on values, not on metrics. A reply that gives
+the comparison revenue as attendance, says "rose" for a fall, or gives the
+plan as the actual passes, because each number is somewhere in the tool
+outputs. On a day with no ticket data, "attendance was 0" passes because
+private events revenue that day is $0.00, a real value. The Ask page says
+the check matches values only and shows the table under every answer, and
+the eval cases test the cases that matter by phrase. A metric-level check
+(each number tied to the label next to it) is the next step. Number words
+("twelve", "a third") are rejected, but "one" is allowed because it is too
+common in prose. Dates written as "9/28" or "28 Sep" are rejected and fall
+back to the table. Abbreviated amounts ("$84K") are always rejected. Questions
 the tools cannot express, such as by-hour or by-channel splits, get "I
 don't know" or the table. Adding a tool means adding its output fields to
 the allowlist and a test that no forbidden field appears.

@@ -5,7 +5,7 @@ test("a recorded answer is shown with its checked figures", async ({ page }) => 
   await page.getByLabel("Question").fill("How did last week compare to last year?");
   await page.getByRole("button", { name: "Ask" }).click();
   await expect(page.getByTestId("answer")).toContainText("$84,328.25");
-  await expect(page.getByTestId("check")).toHaveText("Checked against the data");
+  await expect(page.getByTestId("check")).toHaveText("Every figure was found in the data");
   const total = page.getByTestId("ask-table").getByRole("row", { name: /Total revenue/ });
   await expect(total).toContainText("$84,328.25");
   await expect(total).toContainText("$91,891.36");
