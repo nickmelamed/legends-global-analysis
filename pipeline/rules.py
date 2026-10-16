@@ -85,3 +85,112 @@ def dedup_ticket_loads(df: pd.DataFrame) -> tuple[pd.DataFrame, int]:
         ["ticket_line_id", "ingestion_ts"], kind="mergesort"
     ).drop_duplicates("ticket_line_id", keep="last")
     return out.sort_index(), len(df) - len(out)
+
+
+# Time
+
+BUSINESS_DAY_CUTOFF_HOUR = 4
+SOURCE_ZONE_UTC = "UTC"
+SOURCE_ZONE_LOCAL = "local"
+# NT event_time is UTC and LT event_time is venue local. POS timestamps are
+# all local: each outlet has sharp local opening hours with nothing outside
+# them (H6). Ticket rows use event_date, which is already the local date.
+POS_TIMESTAMP_ZONE = SOURCE_ZONE_LOCAL
+TICKET_EVENT_TIME_ZONE = {"LT": SOURCE_ZONE_LOCAL, "NT": SOURCE_ZONE_UTC}
+
+
+def to_local(ts: pd.Series, timezone: str, source_zone: str) -> pd.Series:
+    """Return naive venue-local timestamps.
+
+    ``source_zone`` must say what the naive input is (``SOURCE_ZONE_UTC`` or
+    ``SOURCE_ZONE_LOCAL``), so a business day is never assigned from a
+    timestamp whose zone is a guess.
+    """
+    if source_zone == SOURCE_ZONE_LOCAL:
+        return ts
+    if source_zone == SOURCE_ZONE_UTC:
+        return ts.dt.tz_localize("UTC").dt.tz_convert(timezone).dt.tz_localize(None)
+    raise ValueError(f"unknown source zone {source_zone!r}")
+
+
+def business_dates(local_ts: pd.Series) -> pd.Series:
+    """Return the business date of each venue-local timestamp.
+
+    The business day runs from 04:00 to 03:59 the next morning.
+    """
+    shifted = local_ts - pd.Timedelta(hours=BUSINESS_DAY_CUTOFF_HOUR)
+    return shifted.dt.date
+
+
+# POS
+
+# Bar has no budget line. Restaurant plus Bar tracks the Restaurant budget,
+# and both sell alcohol with a 20% gratuity (D-003).
+OUTLET_DEPARTMENT = {
+    "Restaurant": "Restaurant",
+    "Bar": "Restaurant",
+    "Cafe": "Cafe",
+    "Gift Shop": "Merchandise",
+}
+OUTLET_REVENUE_LINE = {
+    "Restaurant": "fnb",
+    "Bar": "fnb",
+    "Cafe": "fnb",
+    "Gift Shop": "merch",
+}
+
+
+def outlet_department(outlet: str) -> str:
+    """Return the Overview department an outlet reports under."""
+    try:
+        return OUTLET_DEPARTMENT[outlet]
+    except KeyError:
+        raise UnmappedLabel(f"outlet {outlet!r} is not mapped") from None
+
+
+def outlet_revenue_line(outlet: str) -> str:
+    """Return ``fnb`` or ``merch`` for an outlet."""
+    try:
+        return OUTLET_REVENUE_LINE[outlet]
+    except KeyError:
+        raise UnmappedLabel(f"outlet {outlet!r} is not mapped") from None
+
+
+def to_cents(values: pd.Series) -> pd.Series:
+    """Return dollar amounts as integer cents, so sums are exact."""
+    return (values * 100).round().astype("int64")
+
+
+def pos_line_revenue_cents(df: pd.DataFrame) -> pd.Series:
+    """Return each line's net revenue in integer cents.
+
+    Revenue is ``item_quantity * item_price - discount_amount``, and voided
+    lines are zero. Identical repeated rows are real lines and are never
+    removed, because the order subtotal only matches with them kept (H1, H5).
+    """
+    net = df["item_quantity"].astype("int64") * to_cents(df["item_price"]) - to_cents(
+        df["discount_amount"]
+    )
+    unknown = set(df["is_voided"].unique()) - {"Y", "N"}
+    if unknown:
+        raise UnmappedLabel(f"is_voided values {sorted(unknown)!r} are not mapped")
+    return net.where(df["is_voided"] == "N", 0)
+
+
+def order_subtotal_mismatches(df: pd.DataFrame) -> int:
+    """Count orders whose repeated ``subtotal`` differs from their line sum.
+
+    ``subtotal`` repeats on every line of an order, so it is taken once per
+    order. Zero is expected for every order in the source.
+    """
+    lines = pd.DataFrame(
+        {
+            "order_id": df["order_id"],
+            "net": pos_line_revenue_cents(df),
+            "subtotal": to_cents(df["subtotal"]),
+        }
+    )
+    per_order = lines.groupby("order_id").agg(
+        net=("net", "sum"), subtotal=("subtotal", "first")
+    )
+    return int((per_order["net"] != per_order["subtotal"]).sum())
