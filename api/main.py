@@ -173,11 +173,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         data = overview.build(scope, window, tf)
         buf = io.StringIO()
         w = window.as_dict()
-        comparison = (
-            f"{w['comparison_start']} to {w['comparison_end']} ({w['compare_mode']})"
-            if w["comparison_start"]
-            else "off"
-        )
+        comparison = "off"
+        if w["comparison_start"]:
+            comparison = (
+                f"{w['comparison_start']} to {w['comparison_end']} "
+                f"({w['compare_mode']})"
+            )
+            if w["comparison_elapsed_end"] is None:
+                comparison += ", nothing elapsed to compare"
+            elif w["comparison_elapsed_end"] != w["comparison_end"]:
+                comparison += f", compared through {w['comparison_elapsed_end']}"
+        elapsed = f"{w['days_elapsed']} of {w['days_total']} elapsed"
+        if w["elapsed_end"]:
+            elapsed += f", through {w['elapsed_end']}"
         for line in (
             "Attractions Overview export",
             f"exported_at: {datetime.now(UTC).isoformat(timespec='seconds')}",
@@ -185,7 +193,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             f"user: {scope.user.email}",
             f"venues: {', '.join(scope.venues)}",
             f"window: {w['start']} to {w['end']}",
+            f"days: {elapsed}",
             f"comparison: {comparison}",
+            f"crosses_cutover: {str(w['crosses_cutover']).lower()}",
             f"package_class: {', '.join(tf.package_classes) or 'all'}",
             f"sales_channel: {', '.join(tf.sales_channels) or 'all'}",
             "ticket filters apply to: " + ", ".join(overview.TICKET_FILTERED),

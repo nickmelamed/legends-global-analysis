@@ -149,3 +149,16 @@ def test_comparison_elapsed_end_matches_the_elapsed_length():
     assert (
         rules.comparison_elapsed_end(date(2026, 9, 28), date(2026, 10, 4), None) is None
     )
+
+
+@pytest.mark.parametrize(
+    ("start", "end", "ok"),
+    [
+        (date(2025, 1, 1), date(2026, 12, 31), True),
+        (date(2024, 1, 1), date(2025, 12, 31), True),
+        (date(2025, 1, 1), date(2027, 1, 2), False),
+        (date(2026, 10, 4), date(2026, 10, 4), True),
+    ],
+)
+def test_window_length_is_capped_at_two_years(start, end, ok):
+    assert rules.window_within_limit(start, end) is ok

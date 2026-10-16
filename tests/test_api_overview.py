@@ -222,6 +222,8 @@ def test_export_carries_filters_and_time(make_client):
     assert "# window: 2026-09-28 to 2026-10-04" in lines
     assert "# comparison: off" in lines
     assert "# package_class: GROUP" in lines
+    assert "# days: 7 of 7 elapsed, through 2026-10-04" in lines
+    assert "# crosses_cutover: false" in lines
     assert "kpis,Attendance,count,14,no data,no data,no plan,False,False,False" in lines
 
 
@@ -378,3 +380,44 @@ def test_freshness_flags_one_stale_venue_among_several(tmp_path):
     assert body["stale_feeds"] == [{"venue": "RTL", "feed": "tickets"}]
     assert body["latest_day"]["RTL"]["tickets"] == "2026-10-02"
     assert body["latest_day"]["SSD"]["tickets"] == "2026-10-04"
+
+
+@pytest.mark.parametrize("path", ["/api/overview", "/api/trend", "/api/export.csv"])
+def test_custom_range_longer_than_two_years_is_rejected(make_client, path):
+    r = make_client().get(path, params={"start": "2024-01-01", "end": "2026-10-04"})
+    assert r.status_code == 422
+    assert "731" in r.json()["detail"]
+
+
+def test_export_header_shows_the_elapsed_comparison_and_cutover(make_client):
+    lines = (
+        make_client()
+        .get(
+            "/api/export.csv",
+            params={
+                "start": "2026-09-28",
+                "end": "2026-10-31",
+                "compare_mode": "last_year",
+            },
+        )
+        .text.splitlines()
+    )
+    assert "# days: 7 of 34 elapsed, through 2026-10-04" in lines
+    assert (
+        "# comparison: 2025-09-29 to 2025-11-01 (last_year), "
+        "compared through 2025-10-05" in lines
+    )
+    assert "# crosses_cutover: false" in lines
+
+
+def test_export_header_for_a_future_window(make_client):
+    lines = (
+        make_client()
+        .get("/api/export.csv", params={"start": "2026-10-19", "end": "2026-10-25"})
+        .text.splitlines()
+    )
+    assert "# days: 0 of 7 elapsed" in lines
+    assert (
+        "# comparison: 2026-10-12 to 2026-10-18 (prior_period), "
+        "nothing elapsed to compare" in lines
+    )

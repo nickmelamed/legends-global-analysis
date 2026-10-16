@@ -428,6 +428,16 @@ def comparison_crosses_cutover(
     return cmp_start is not None and crosses_cutover(cmp_start, cmp_end)
 
 
+# Two years, leap day included. It holds all the data (from 2025-01-01) and a
+# year-on-year view, and keeps a typo such as 2062 from scanning decades.
+MAX_WINDOW_DAYS = 731
+
+
+def window_within_limit(start: date, end: date) -> bool:
+    """Return whether a window is at most ``MAX_WINDOW_DAYS`` long."""
+    return (end - start).days + 1 <= MAX_WINDOW_DAYS
+
+
 def ratio(numerator: float | None, denominator: float | None) -> float | None:
     """Return numerator / denominator, or None when either is missing or zero."""
     if numerator is None or denominator is None or denominator == 0:

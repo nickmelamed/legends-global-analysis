@@ -66,6 +66,10 @@ def resolve(
             raise HTTPException(422, "a custom range needs start and end")
         if start > end:
             raise HTTPException(422, "start is after end")
+        if not rules.window_within_limit(start, end):
+            raise HTTPException(
+                422, f"a custom range can be at most {rules.MAX_WINDOW_DAYS} days"
+            )
         days_total = (end - start).days + 1
     else:
         start, end, days_total = PRESETS[preset](today)
