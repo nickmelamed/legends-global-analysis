@@ -164,3 +164,22 @@ itself uses the full sum.
 Consequences. Anyone comparing the app with the old Ancillary page will
 see Restaurant and ancillary totals $1,251.02 higher at Summit for the week.
 The reconciliation doc has to explain this before users see it.
+
+## D-009: Guest data and free text stay out of the database (2026-10-16)
+
+Context. The workbooks carry `customer_country`, ticket and POS `order_id`,
+labor `person_id`, and free-text `comments`, `voided_reason` and
+`lost_reason_name`. No Overview measure needs them, and Phase 5 puts a
+language model behind the API.
+
+Decision. The load reads these columns for in-load checks only (order
+subtotals, shift overlaps, business-key duplicates) and does not write them to
+DuckDB. A test asserts that no output table has one of these columns.
+
+Why. A column that is not in the database cannot be sent to a model, exported
+or shown by mistake. That is simpler to verify than an allowlist on every
+query.
+
+Consequences. Measures that need these fields, such as orders per guest or
+average check, need the load changed first. Average check needs an order
+count, which can be added as a count column without the ids.
