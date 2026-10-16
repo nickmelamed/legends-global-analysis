@@ -7,7 +7,7 @@ after compaction.
 ## Now
 
 - [x] Setup: repo-standards mode A, hooks, rules, reviewer agents, repo skills
-- [ ] Phase 1: profile the data, hypothesis table (about 25 min). Stop after.
+- [x] Phase 1: profile the data, hypothesis table (about 25 min). Stop after.
 
 ## Next
 
@@ -24,10 +24,10 @@ after compaction.
 
 Resolved in Phase 1: Bar rolls into Restaurant (D-003). Annual Pass visits,
 no-shows and the RTL 2026-05-09 Free Admission Day count as attendance
-(D-004). RTL 2026-04-18 is a missing feed (D-005). Cover shifts count,
-payroll with missing rates is marked incomplete, the 0.5 h deduction stands
+(D-004). RTL 2026-04-18 is a missing feed (D-005). Cover shifts count and
+the 0.5 h deduction stands. Payroll with missing rates is marked incomplete
 (D-006). Bar gaps are closures and Affiliate stays off the channel chart
-(D-007). Productivity shows 3.82 with the 3.81 gap explained.
+(D-007). Productivity shows 3.82. Power BI's 3.81 is likely per-shift rounding of hours (see DATA_PROFILE.md).
 
 ## Open questions for the owner
 
