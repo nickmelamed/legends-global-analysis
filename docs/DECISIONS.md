@@ -63,8 +63,11 @@ no Bar. Summit's Bar revenue in the reconciliation week is $1,251.02.
 Decision. Bar is reported under Restaurant in the department split and the
 budget comparison. F&B stays Restaurant + Bar + Cafe, as the packet defines.
 
-Why. Bar is closer to Restaurant than to Cafe. Both sell alcohol and both
-add a 20% gratuity, while Cafe sells only food and non-alcoholic drinks.
+Why. The budget points the same way. With Bar added, Restaurant actuals
+run at 69 to 76% of the Restaurant budget, close to Cafe's 73 to 84%. Bar
+added to Cafe would put Cafe at 125 to 144% of plan (`pos.py`, Restaurant
+budget section, 2025 and 2026 to date). Bar and Restaurant also both sell
+alcohol and add a 20% gratuity, while Cafe sells neither.
 
 Consequences. Summit's Restaurant line for the week is $7,035.30. The
 mapping lives in `pipeline/rules.py` with a test.
@@ -72,8 +75,7 @@ mapping lives in `pipeline/rules.py` with a test.
 ## D-004: What counts as attendance (2026-10-16)
 
 Context. Power BI counts Annual Pass visits ($0 value), no-shows and the one
-Free Admission Day (RTL 2026-05-09, 142 lines). Each of these could be argued
-either way.
+Free Admission Day (RTL 2026-05-09, 142 lines).
 
 Decision. All three count as attendance. Cancelled lines and the
 NON-ADMISSION and EVENT package classes do not.
@@ -92,17 +94,22 @@ Saturday, but labor shows a normal staffed day.
 Decision. Treat it as a missing feed. Ticket, F&B and merchandise show "no
 data" for that venue-day, never zero.
 
-Why. Nothing in the data points to a closure. Labor shows 9 shifts and
+Why. Priya (Revenue and Finance) recalls "a day in Nashville in April
+where nothing loaded" in the stakeholder interviews. Nothing in the data
+points to a closure. Labor shows 9 shifts and
 55.15 hours that day, in line with the surrounding week (6 to 10 shifts).
 The days either side had 150 and 206 guests.
 
 Consequences. Any window containing that day carries a data gap flag, and
-Riverbend's April trend shows a gap rather than a dip.
+Riverbend's April trend shows a gap rather than a dip. Labor
+exists that day, so ratio KPIs (per cap, guests per labor hour, labor $ per
+guest, payroll as % of revenue) for any window containing it carry the same
+flag.
 
 ## D-006: Labor hours and incomplete payroll (2026-10-16)
 
-Context. Labor has 237 unscheduled cover shifts that overlap the same
-person's previous shift, 132 shifts with hours but no rate or earnings, and
+Context. Labor has 237 shifts that overlap the same person's previous
+shift (174 of them unscheduled covers), 132 shifts with hours but no rate or earnings, and
 a 0.5 h deduction on 12,004 shifts (every shift over 6 h on the clock and
 every unscheduled shift).
 
@@ -113,17 +120,18 @@ shifts and hours affected. Payroll is not estimated.
 
 Why. Power BI counts the cover shifts, and the targets only match with them.
 The deduction is systematic, which points to an unpaid meal break by policy.
-Rates change on almost every shift, so a filled rate would be a guess, and
-showing $0 as if complete understates Summit's week by about $267.
+Rates change on almost every shift, so a filled rate would be a guess.
+Showing $0 as if complete understates Summit's week by about $267.
 
 Consequences. Summit's week shows $9,347 payroll marked incomplete (2
 shifts, 12.98 h). Payroll as % of revenue carries the same flag.
 
 ## D-007: Bar outlet gaps are closures, Affiliate stays off the channel chart (2026-10-16)
 
-Context. Some days have POS rows for a venue but none for its Bar (RTL 26,
-TRO 67, SSD 2). Separately, Power BI's revenue-by-channel visual leaves out
-Affiliate ($681.12 at Summit this week).
+Context. Some days have POS rows for a venue but none for its Bar (26 days
+at RTL excluding 2026-04-18, 67 at TRO, 2 at SSD). Separately, Power BI's
+revenue-by-channel visual leaves out Affiliate ($681.12 at Summit this
+week).
 
 Decision. A Bar gap on a day when the venue's other outlets have rows is a
 closure or a no-sale day, so Bar shows $0 for that day, not "no data". The

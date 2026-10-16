@@ -1,6 +1,6 @@
 # Data profile
 
-Profile of the five supplied workbooks, written before any pipeline code. Each
+Profile of the five supplied workbooks. Each
 figure here is printed by one of three scripts, run from the repo root with
 pandas and openpyxl. Each takes 15 to 60 seconds.
 
@@ -44,7 +44,7 @@ twice.
 The RTL total target of 56,220 is the sum of the rounded components
 (23,778 + 3,531 + 2,586 + 26,325). The unrounded sum is 56,218.57, which
 rounds to 56,219. The total is a derived figure, so this belongs in
-docs/RECONCILIATION.md in Phase 2 as a rounding explanation, not a data fix.
+docs/RECONCILIATION.md in Phase 2 as a rounding difference.
 
 The rules that reproduce the targets:
 
@@ -70,11 +70,11 @@ The rules that reproduce the targets:
 | 3 | Add-ons and event entries are not admissions | Confirmed | NON-ADMISSION (photo, parking) carries value. EVENT (Private Event Entry) is $0 with quantity. Annual Pass visits ($0) do count. | 902 event-entry lines plus all add-on lines | -112 guests, -$1,330.20 | Exclude classes NON-ADMISSION and EVENT. |
 | 4 | Cutover changes names and channels, class is stable | Partial | Names change for 14 of 17 packages. `package_class` and `internal_name` are stable. Channels do not change (same merchant ids, same mix). Prices rose 4.5% on 2026-01-01, before the cutover. | 102 dim_package rows | 0 | Compare last year by `package_class`. Flag the price rise in last-year deltas. |
 | 5 | POS order totals repeat per line | Confirmed | Order-level money has one value per order. `final_total = subtotal + tax + gratuity` and `subtotal` = non-void net line sum, to the cent, for all 76,328 orders. Gratuity is 20% on Bar and Restaurant orders. | All POS rows | 0 under the line rule. `final_total` would give F&B 10,780.27. | Line revenue. Order subtotal is a test check. |
-| 6 | Some POS timestamps are UTC | Rejected for POS. UTC found in NT tickets. | No POS row at any venue falls between 02:00 and 08:59, so none are UTC. NT `event_time` is UTC, but `event_date` is already the local date on 100% of rows. The 4 AM cutoff moves 431 POS rows. | 431 POS rows cross midnight | 0 for SSD. RTL-O0063532 ($14.50) moves into the week, which RTL needs to match. | Business day = local timestamp minus 4 h. Use `event_date` for tickets, and convert NT `event_time` from UTC only if times are shown. |
+| 6 | Some POS timestamps are UTC | Rejected for POS. UTC found in NT tickets. | Each outlet has sharp local opening hours (Cafe 09:00 to 19:59, Gift Shop 10:00 to 20:59, nothing outside them), and all six F&B and merch targets match with no conversion. A UTC subset would show sales hours shifted by 5 to 7 hours. NT `event_time` is UTC, but `event_date` is already the local date on 100% of rows. The 4 AM cutoff moves 431 POS rows. | 431 POS rows cross midnight | 0 for SSD. One RTL Bar order ($14.50, 00:33 on 10-05) moves into the week, which RTL needs to match. | Business day = local timestamp minus 4 h. Use `event_date` for tickets, and convert NT `event_time` from UTC only if times are shown. |
 | 7 | Messy labels | Rejected for POS. Confirmed for labor. | POS labels are clean. Labor has 24 department labels that map to 6 departments with 0 unmapped ("Food & Beverage" holds only restaurant positions). There are 12 `location_name` variants of 3 names. Position is clean. | 16,512 labor and 16,450 schedule rows | Department split only | Mapping table. Fail the load on unmapped values. |
-| 8 | Labor rules | Partial | `date` is always the start date (639 overnight shifts). `total_hrs = reg_hrs + ot_hrs` always. Clock time is 0.5 h more on 12,004 rows (unpaid break). OT is paid at 1.5x. 132 rows have no rate or earnings. One business-key duplicate (E10303, 2026-01-06). 237 overlapping cover shifts. | 132 missing-rate rows, 237 overlaps | 2 missing-rate shifts (12.98 h) at $0, 2 overlaps (11.0 h) counted, tips $513.86 excluded | Start date. `total_hrs`. Missing rate counts $0 and is flagged. No tips. |
+| 8 | Labor rules | Partial | `date` is always the start date (639 overnight shifts). `total_hrs = reg_hrs + ot_hrs` always. Clock time is 0.5 h more on 12,004 rows (unpaid break). OT is paid at 1.5x. 132 rows have no rate or earnings. One business-key duplicate (SSD, 2026-01-06). 237 shifts overlap the same person's previous shift, 174 of them unscheduled covers. | 132 missing-rate rows, 237 overlaps | 2 missing-rate shifts (12.98 h) at $0, 2 overlaps (11.0 h) counted, tips $513.86 excluded | Start date. `total_hrs`. Missing rate counts $0 and the window's payroll is marked incomplete (D-006). Cover shifts count. No tips. |
 | 9 | Multi-day bookings repeat the booking total | Confirmed | 34 two-day bookings. `booking_grand_total` equals the sum of event `grand_total` for all 425 bookings. Summing per row overstates by $736,246.60. The week cannot tell the rules apart, but the prior week's -70.5% only fits event-level money. | 68 event rows | 0 (1 event, EV-000222) | Event-level `grand_total` on `event_date`, Definite only. |
-| 10 | Missing venue-days | Confirmed | RTL 2026-04-18 (Saturday) has no ticket and no POS rows, but has labor. Bar outlet gaps: RTL 27 days (including 10-02 in the week), TRO 67, SSD 2. Labor, schedule, budget and weather have no gaps. | 1 venue-day, plus outlet-days | 0 | Show "no data" for a venue-day missing from a feed. Outlet gaps are an open question. |
+| 10 | Missing venue-days | Confirmed | RTL 2026-04-18 (Saturday) has no ticket and no POS rows, but has labor. Bar outlet gaps on days with other POS rows: RTL 26 (27 counting 2026-04-18, when the whole venue is missing, and including 10-02 in the week), TRO 67, SSD 2. Labor, schedule, budget and weather have no gaps. | 1 venue-day, plus outlet-days | 0 | Show "no data" for a venue-day missing from a feed (D-005). Bar outlet gaps show $0 (D-007). |
 | 11 | Other | Found | See the list below. | | | |
 
 Other findings (hypothesis 11):
@@ -82,7 +82,7 @@ Other findings (hypothesis 11):
 - `retail_amount` is the base adult price times quantity, not the line value.
   `ticket_value` is the revenue field.
 - Free Admission Day appears once, at RTL on 2026-05-09 (142 lines, $0).
-- Voids all carry the reason "Guest complaint" (1,973 lines). Including them
+- Voids all carry the same one reason (1,973 lines). Including them
   would add $138.48 to Summit-week F&B and $76.96 to merch.
 - Voucher is a POS tender, so voucher sales count as revenue.
 - The budget has no Bar department, and `budget_attendance` is set only on
@@ -102,9 +102,10 @@ minus Bar (4,533.26), so Bar is subtracted twice. Three other figures on the
 page fit the same reading. The headline $14.9K is 16,187.54 minus 1,251.02.
 The per cap $8.08 is 14,936.52 / 1,849. The +24.6% vs prior only works with
 prior-week Bar removed the same way. The 9,230 target is the full F&B sum, and
-the visual understates F&B by $1,251.02. This comes from the arithmetic, not
-from the report model. Avg Check $38.40 and Capture Rate 31.8% do not
-reproduce and are unexplained.
+the visual understates F&B by $1,251.02. This is inferred from the arithmetic
+without the .pbix. Avg Check $38.40 and Capture Rate 31.8% do not
+reproduce and are unexplained. The other candidate, Restaurant minus its own
+alcohol, gives 4,696.86 ($4.7K) and does not fit.
 
 Revenue by sales channel sums to $60,894.59 for the top seven channels. The
 gap to $61,575.71 is exactly Affiliate, $681.12 from 10 lines (SSD-T0042214
@@ -117,7 +118,8 @@ Productivity 1,849 / 484.47 is 3.8165, which rounds to 3.82, not the 3.81
 shown. A displayed 3.81 needs 484.67 to 485.94 hours. Rounding each shift to
 0.1 h before summing gives 484.90, and 1,849 / 484.90 is 3.813. This is the
 only candidate found in that range, so it is likely but not proven. The hours
-target of 484.5 uses unrounded shifts.
+target of 484.5 uses unrounded shifts. Labor $/guest of $5.05 confirms
+payroll of 9,346.69 with missing rates left at $0.
 
 The private events monthly chart stops at 2026-08 even though September 2026
 has 6 Definite Summit events ($46,402). The chart's top gridline ($179.9K) is
@@ -134,12 +136,7 @@ $0.03) are unexplained.
 
 ## Detail by workbook
 
-The sections below are the per-sheet profiles: row counts, keys, nulls,
-distinct values, date ranges and spellings.
-
 ### 01_Ticketing.xlsx
-
-Every figure below is printed by `python3 scripts/profile/ticketing.py` (about 15 s). The workbook was read only.
 
 README sheet says the extract is order-line grain (one row is one package on one order, `quantity` guests), event_date 2025-01-01 to 2026-10-04 plus advance sales to 2026-11-03, LT until 2026-02-02 and NT from 2026-02-03.
 
@@ -149,7 +146,7 @@ README sheet says the extract is order-line grain (one row is one package on one
 
 Candidate key `ticket_line_id` is not unique: 82,929 distinct values, 262 ids appear twice (see H1). No row is an exact duplicate because `ingestion_ts` differs. After keeping the latest load, `ticket_line_id` is unique. `order_id` groups several lines. The `ticket_line_id` prefix always equals `attraction_prefix`. Every `package_id` exists in dim_package and belongs to the same venue and source system as the fact row. Every `merchant_id` exists in dim_merchant. `attraction_prefix` and `location_id` map one to one (SSD L-1001, RTL L-1002, TRO L-1003), matching dim_venue.
 
-Nulls: `promotional_code` 80,398, `o_device` 58,809. Every other column has no nulls.
+`promotional_code` has 80,398 nulls and `o_device` 58,809. No other column has nulls.
 
 Distinct values (LT / NT row counts):
 
@@ -159,11 +156,11 @@ Distinct values (LT / NT row counts):
 | record_status | ACTIVE 48,780 | ACTIVE 34,411 |
 | attraction_prefix | SSD 25,138, RTL 13,860, TRO 9,782 | SSD 17,879, RTL 9,611, TRO 6,921 |
 | promotional_code | null 47,151, TEACHER 422, BDAY5 415, LOCAL25 397, SUMMER10 395 | null 33,247, BDAY5 307, LOCAL25 302, SUMMER10 282, TEACHER 273 |
-| customer_country | US 40,074, CA 2,348, Other 1,911, GB 1,522, MX 1,187, DE 1,003, AU 735 | US 28,286, CA 1,751, Other 1,339, GB 988, MX 845, DE 699, AU 503 |
+| customer_country | guest data, no nulls, distribution not profiled | |
 | o_device | null 34,446, Mobile 8,951, Desktop 4,512, Tablet 871 | null 24,363, Mobile 6,340, Desktop 3,097, Tablet 611 |
 | merchant_id | 1: 14,673, 2: 14,334, 3: 4,532, 10: 3,556, 8: 2,777, 7: 2,692, 4: 2,167, 5: 1,727, 6: 1,487, 9: 835 | 1: 10,580, 2: 10,048, 3: 3,114, 10: 2,442, 7: 1,974, 8: 1,839, 4: 1,496, 5: 1,248, 6: 1,019, 9: 651 |
 
-Alternate spellings: the two status vocabularies are the same concepts in different case and separators (Cancelled / CANCELLED, Redeemed / REDEEMED, No Show / NO_SHOW). NT adds PART_REDEEMED. LT has In Process, NT has CONFIRMED. No other categorical column has variant spellings.
+The two status vocabularies are the same concepts in different case and separators (Cancelled / CANCELLED, Redeemed / REDEEMED, No Show / NO_SHOW). NT adds PART_REDEEMED. LT has In Process, NT has CONFIRMED. No other categorical column has variant spellings.
 
 Date ranges by source system:
 
@@ -174,9 +171,9 @@ Date ranges by source system:
 | date_sold | 2024-10-07 to 2026-02-02 | 2025-11-08 to 2026-10-04 |
 | ingestion_ts | 2025-01-02 06:00 to 2026-02-03 06:00 | 2026-02-04 06:00 to 2026-10-05 06:00 |
 
-The cutover is clean on event_date: no LT row after 2026-02-02 and no NT row before 2026-02-03. NT sold tickets from 2025-11-08 for post-cutover dates.
+The cutover is clean on event_date. No LT row falls after 2026-02-02 and no NT row before 2026-02-03. NT sold tickets from 2025-11-08 for post-cutover dates.
 
-Amounts: no negative quantity or value anywhere. `quantity` 1 to 40. `ticket_value` and `retail_amount` are zero on the same 8,691 rows (before dedup).
+No quantity or value is negative. `quantity` 1 to 40. `ticket_value` and `retail_amount` are zero on the same 8,691 rows (before dedup).
 
 #### dim_package
 
@@ -194,11 +191,11 @@ Name pairs that are the same package (LT name / NT name): Adult GA / General Adm
 
 **H1 duplicate loads. CONFIRMED.** 262 `ticket_line_id` values appear exactly twice (524 rows), all NT, all SSD, event_date 2026-06-06 (156 ids) and 2026-06-07 (106 ids). The first copy was ingested 2026-06-07 06:00 or 2026-06-09 06:00 and the second 2026-06-08 06:00. Every column except `ingestion_ts` is identical within each pair, so keep-latest and keep-first give the same result. Examples SSD-T0032692, SSD-T0032693, SSD-T0032694. Dedup drops 262 rows, worth 858 countable guests and $30,440.88 of countable ticket value on Summit 2026-06-06/07. Reconciliation week impact is zero (no duplicates in that week). It matters for any window covering early June, including next year's last-year comparisons.
 
-**H2 status vocabularies differ. CONFIRMED, with a correction to the framing.** Cancelled lines keep their full quantity and value in both systems. There is no negative quantity, no zeroed value and no record_status signal (record_status is ACTIVE on every row). The only cancellation signal is the status text: LT `Cancelled` (1,252 lines, $142,002 value) and NT `CANCELLED` (840 lines after dedup, $102,379). LT is the unreliable vocabulary: 92% of lines are `In Process` and only 4.5% are `Redeemed`, so an allowlist such as "Redeemed only" would drop most real LT visits. NT statuses look like a real lifecycle. The rule that reconciles is a per-source denylist of the cancelled status, keeping NO_SHOW and PART_REDEEMED and LT In Process and No Show. Dropping NO_SHOW as well misses the target by 77 guests and $2,240 at Summit. Summit week impact of the cancel rule: 11 cancelled admission lines, 80 guests, $1,944.58 (example SSD-T0042290, SSD-T0042317, SSD-T0042361). Whether an LT `In Process` line from 2025 is really a visit cannot be checked from this file. That uncertainty applies to last-year comparisons only.
+**H2 status vocabularies differ. CONFIRMED, with a correction to the framing.** Cancelled lines keep their full quantity and value in both systems. There is no negative quantity, no zeroed value and no record_status signal (record_status is ACTIVE on every row). The only cancellation signal is the status text: LT `Cancelled` (1,252 lines, $142,002 value) and NT `CANCELLED` (840 lines after dedup, $102,379). LT is the unreliable vocabulary. 92% of its lines are `In Process` and only 4.5% are `Redeemed`, so an allowlist such as "Redeemed only" would drop most real LT visits. NT statuses look like a real lifecycle. The rule that reconciles is a per-source denylist of the cancelled status, keeping NO_SHOW and PART_REDEEMED and LT In Process and No Show. Dropping NO_SHOW as well misses the target by 77 guests and $2,240 at Summit. Summit week impact of the cancel rule: 11 cancelled admission lines, 80 guests, $1,944.58 (example SSD-T0042290, SSD-T0042317, SSD-T0042361). Whether an LT `In Process` line from 2025 is really a visit cannot be checked from this file. That uncertainty applies to last-year comparisons only.
 
 **H3 add-ons and private event entries. CONFIRMED.** NON-ADMISSION (Souvenir Photo, Parking Validation, ticket_type ADD-ON) carries ticket value. EVENT (Private Event Entry) is always zero value but carries quantity (902 lines, 3,182 guests in total). Both must leave attendance and ticket revenue. Summit week, non-cancelled, photo is 15 lines, 66 qty, $1,069.20. Parking is 8 lines, 29 qty, $261.00. pe_entry is 5 lines, 17 qty, $0. Total impact 112 guests and $1,330.20 of revenue. The Annual Pass Visit (`pass`, INDIVIDUAL, zero value) does count as attendance: excluding it gives 1,781 against 1,849.
 
-**H4 cutover changes names, not classes or channels. PARTIAL.** Package names change for 14 of 17 packages per venue. `package_class` and `internal_name` are identical across LT and NT for every venue, so class (or internal_name for finer grain) is a stable key. Channels do not change: merchant ids and the channel mix are the same in both systems (Walk Up 30.1% / 30.7%, Web 29.4% / 29.2%, others within 0.3 points). The time convention does change (see H11 timezone). Separately, prices rose on 2026-01-01, a month before the cutover: SSD Adult GA was $36.00 in 2025 and $37.62 from 2026-01-01 in both LT and NT. A last-year comparison therefore mixes a 4.5% price increase with any volume change. No Summit week impact.
+**H4 cutover changes names, not classes or channels. PARTIAL.** Package names change for 14 of 17 packages per venue. `package_class` and `internal_name` are identical across LT and NT for every venue, so class (or internal_name for finer grain) is a stable key. Channels do not change: merchant ids and the channel mix are the same in both systems (Walk Up 30.1% / 30.7%, Web 29.4% / 29.2%, others within 0.3 points). The time convention does change (see H11 timezone). Separately, prices rose on 2026-01-01, a month before the cutover. SSD Adult GA was $36.00 in 2025 and $37.62 from 2026-01-01 in both LT and NT. A last-year comparison therefore mixes a 4.5% price increase with any volume change. No Summit week impact.
 
 **H10 missing venue-days. CONFIRMED, one day.** Over 2025-01-01 to 2026-10-04 the only venue-day with no ticket rows is RTL (Nashville) 2026-04-18, a Saturday. SSD and TRO have every day. The thinnest days with data are TRO 2025-05-13 (2 lines), TRO 2025-01-16, 2025-04-21 and 2026-09-03 (4 lines each), which look like quiet days rather than gaps but are not proven. Advance-sale dates after 2026-10-04 have many empty days, which is expected. No Summit week impact.
 
@@ -206,7 +203,7 @@ Name pairs that are the same package (LT name / NT name): Adult GA / General Adm
 
 1. NT `event_time` is UTC, LT `event_time` is venue local. Converting NT event_time from UTC to the venue timezone gives event_date on 100% of rows, while the raw NT date matches event_date on only 80.0%. Raw NT hours run 13 to 23 and 0 to 3. Local visit times are 08:00 to 21:xx, so the 4 AM business-day cutoff never moves a ticket. `event_date` is already the local business date in both systems and is the column to use. Using the raw UTC date instead costs Summit 1 guest and $160.23 for the week.
 2. `retail_amount` is not the admission amount. It equals the base adult price times quantity for almost every package (SSD $36.00 or $37.62 per guest for child, senior, VIP, group alike), while `ticket_value` varies by package. They agree on only 44.6% of lines. `ticket_value` is the field that reconciles, as the dictionary says.
-3. `Free Admission Day` (promo_free) appears once in the whole history: RTL 2026-05-09, 142 lines, zero value. It counts as attendance under the reconciled rule. Worth a question to the owner, since it is a one-off spike for Nashville.
+3. `Free Admission Day` (promo_free) appears once, at RTL on 2026-05-09, 142 lines, zero value. It counts as attendance under the reconciled rule. Counted as attendance (D-004).
 4. Guest Insights page figures do not reproduce with obvious definitions. Power BI shows premium rate 27%, same-day rate 38%, lead time 6.4 d, basket 2.6. Under the reconciled filter, premium share is 19.0% by guests or 22.3% by lines (32.6% by revenue), same-day share is 43.9% by guests or 61.2% by lines, mean lead time 6.2 d by lines, guests per order 4.88. Unexplained. These are not on the Overview page.
 5. The private event ticket line (pe_entry) has quantity in the ticketing feed. If private events revenue is taken from the CRM, those guests are not visitors in this feed and must not be added to attendance either.
 
@@ -242,15 +239,11 @@ Total 61,575.71. Every channel figure and ATP matches the export (Concierge ATP 
 
 #### Open questions
 
-1. Should Pass (annual pass visits, zero value) count in attendance? Power BI says yes (68 guests at Summit this week). It lowers ATP and per cap.
-2. Is the revenue-by-channel visual a Top 7 filter, or is Affiliate deliberately excluded?
-3. Should NO_SHOW and LT No Show count as attendance? Power BI counts them (sold, not visited). If the business means visits, attendance falls by 77 at Summit.
-4. Why is RTL 2026-04-18 empty (closure or a failed feed)? It should show "no data" until confirmed.
-5. Is RTL 2026-05-09 Free Admission Day a real event?
+Resolved in D-004, D-005 and D-007.
 
 ### POS lines (data/02_POS_FandB_Merch.xlsx, sheet pos_order_lines)
 
-Reproduce with `python3 scripts/profile/pos.py` from the repo root (about 15 s). All figures below come from that script. "Week" means business days 2026-09-28 to 2026-10-04, where the business day is `order_created_date - 4h`, then the date.
+"Week" means business days 2026-09-28 to 2026-10-04, where the business day is `order_created_date - 4h`, then the date.
 
 #### Shape and keys
 
@@ -258,7 +251,7 @@ Reproduce with `python3 scripts/profile/pos.py` from the repo root (about 15 s).
 
 There is no line number and no ingestion or load timestamp column. No column set is a unique line key. `order_id + product_name` repeats on 7,529 rows, and even the full 16-column row repeats on 4,042 rows. `order_id` is the order key. Every order has exactly one venue_code, outlet, order_created_date, tender_type, subtotal, tax, gratuity and final_total. The order_id prefix always equals venue_code.
 
-Nulls: only `voided_reason` (129,455 nulls, exactly the non-voided rows). Timestamps are minute precision (no non-zero seconds).
+Only `voided_reason` has nulls (129,455, exactly the non-voided rows). Timestamps are minute precision (no non-zero seconds).
 
 #### Distinct values
 
@@ -268,7 +261,7 @@ Nulls: only `voided_reason` (129,455 nulls, exactly the non-voided rows). Timest
 | outlet | Cafe 44,954, Restaurant 38,200, Gift Shop 33,070, Bar 15,204 |
 | product_category | Food 49,660, Retail 33,070, Beverage 28,186, Alcohol 20,512 |
 | is_voided | N 129,455, Y 1,973 |
-| voided_reason | Guest complaint 1,973 (null otherwise) |
+| voided_reason | free text, 1,973 non-null, one distinct value, not quoted here |
 | tender_type | Card 105,403, Cash 10,404, Voucher 9,133, Gift Card 6,488 |
 | item_quantity | 1: 98,449, 2: 26,291, 3: 6,688 |
 | product_name | 31 values, all distinct spellings (see script output) |
@@ -279,22 +272,22 @@ No alternate spellings, case variants or whitespace variants exist in venue_code
 
 #### Date ranges
 
-All twelve venue and outlet pairs run from 2025-01-01 to 2026-10-04 local time. The only row after midnight on 2026-10-04 is RTL Bar 2026-10-05 00:33 (order RTL-O0063532), which belongs to business day 2026-10-04.
+All twelve venue and outlet pairs run from 2025-01-01 to 2026-10-04 local time. The only row after midnight on 2026-10-04 is RTL Bar 2026-10-05 00:33 (one Bar order), which belongs to business day 2026-10-04.
 
 #### Hypotheses
 
-**H1 duplicate loads: REJECTED for this sheet.** The column the hypothesis needs (ingestion_ts) does not exist. 4,042 rows are exact copies of another row (SSD 2,318, RTL 1,046, TRO 678, in 3,978 orders, for example SSD-O0000015, SSD-O0000018). The POS-exported `subtotal` proves they are real lines. Subtotal equals the sum of non-void `qty * price - discount` for all 76,328 orders when the copies are kept, and for only 72,351 when they are dropped (3,977 orders break). The copies are interleaved with their originals, not appended at the end. Dropping them would remove $417.56 of non-void net from Summit week (F&B 9,033.34 and merch 6,736.64 instead of 9,230.42 and 6,957.12) and miss the targets. Keep every row. Summit-week impact of the correct treatment is $0.
+**H1 duplicate loads. REJECTED for this sheet.** The column the hypothesis needs (ingestion_ts) does not exist. 4,042 rows are exact copies of another row (SSD 2,318, RTL 1,046, TRO 678, in 3,978 orders). The POS-exported `subtotal` proves they are real lines. Subtotal equals the sum of non-void `qty * price - discount` for all 76,328 orders when the copies are kept, and for only 72,351 when they are dropped (3,977 orders break). The copies are interleaved with their originals, not appended at the end. Dropping them would remove $417.56 of non-void net from Summit week (F&B 9,033.34 and merch 6,736.64 instead of 9,230.42 and 6,957.12) and miss the targets. Keep every row. Summit-week impact of the correct treatment is $0.
 
-**H5 order-level columns repeat: CONFIRMED.** All four order-level money columns have one value per order. `final_total = subtotal + tax + gratuity` for all 76,328 orders. `subtotal = sum over non-void lines of (item_quantity * item_price - discount_amount)` for all 76,328 orders, to the cent. Including void lines breaks 1,962 orders, and using gross before discount breaks 6,140. So the line rule and the order rule agree everywhere, and summing subtotal across lines would multiply it by the line count. Gratuity is 20% of subtotal on 4,966 Bar and 9,070 Restaurant orders and zero elsewhere. Tax is about 8.2% to 8.3% of subtotal at all three venues. Summit-week impact: summing subtotal per line instead of once per order would overstate revenue, using final_total would give F&B 10,780.27 and merch 7,531.13.
+**H5 order-level columns repeat. CONFIRMED.** All four order-level money columns have one value per order. `final_total = subtotal + tax + gratuity` for all 76,328 orders. `subtotal = sum over non-void lines of (item_quantity * item_price - discount_amount)` for all 76,328 orders, to the cent. Including void lines breaks 1,962 orders, and using gross before discount breaks 6,140. So the line rule and the order rule agree everywhere, and summing subtotal across lines would multiply it by the line count. Gratuity is 20% of subtotal on 4,966 Bar and 9,070 Restaurant orders and zero elsewhere. Tax is about 8.2% to 8.3% of subtotal at all three venues. Summing subtotal per line would overstate Summit-week revenue. Using final_total would give F&B 10,780.27 and merch 7,531.13.
 
-**H6 mixed UTC and local timestamps: REJECTED.** Hours run 09 to 23 plus 00 and 01. No row falls between 02:00 and 08:59 at any venue. A UTC-stored Denver or Nashville sale during opening hours would land at 14:00 to 07:00 UTC, so a UTC subset would put rows in that gap. All rows look local. The 4 AM cutoff still matters. 431 rows fall before 04:00 (SSD 240, RTL 121, TRO 70). For Summit week, 2 rows (order SSD-O0043433) move to the previous day but stay inside the week, so the weekly impact is $0 (calendar day and business day both give 16,187.54). For Riverbend, order RTL-O0063532 ($14.50 Bar) moves from 2026-10-05 into the week, and that is the only reason RTL F&B is 3,530.61 (matches 3,531) and not 3,516.11 by calendar date.
+**H6 mixed UTC and local timestamps. REJECTED.** Hours run 09 to 23 plus 00 and 01. No row falls between 02:00 and 08:59 at any venue. The per-outlet hour profile has sharp edges (Cafe 09:00 to 19:59, Gift Shop 10:00 to 20:59, Restaurant 11:00 to 21:59) with nothing outside them. A UTC subset of daytime sales would show Cafe or Gift Shop rows 5 to 7 hours later, and there are none. All six targets also match with no conversion. All rows look local. The 4 AM cutoff still matters. 431 rows fall before 04:00 (SSD 240, RTL 121, TRO 70). For Summit week, 2 rows (one order) move to the previous day but stay inside the week, so the weekly impact is $0 (calendar day and business day both give 16,187.54). For Riverbend, one Bar order ($14.50) moves from 2026-10-05 into the week, and that is the only reason RTL F&B is 3,530.61 (matches 3,531) and not 3,516.11 by calendar date.
 
-**H7 messy labels: REJECTED for this sheet.** Every label column is clean (see the table above). Proposed mapping is identity plus department. `Restaurant`, `Cafe` and `Bar` map to F&B, and `Gift Shop` maps to Merchandise. The budget and the Overview page split F&B into Restaurant and Cafe only, so Bar has to be assigned to one of them (open question). Nothing is unmapped.
+**H7 messy labels. REJECTED for this sheet.** Every label column is clean (see the table above). Proposed mapping is identity plus department. `Restaurant`, `Cafe` and `Bar` map to F&B, and `Gift Shop` maps to Merchandise. The budget and the Overview page split F&B into Restaurant and Cafe only, so Bar is reported under Restaurant (D-003). Nothing is unmapped.
 
-**H10 missing venue-days: PARTIAL.** At venue level only RTL 2026-04-18 has no rows at all (every outlet missing). SSD and TRO have rows every business day from 2025-01-01 to 2026-10-04. Per outlet, gaps are mostly Bar days. RTL Bar 27 days, including 2026-10-02 in the reconciliation week, SSD Bar 2 days (2025-04-21, 2025-09-22), TRO Bar 67 days, TRO Restaurant 14, TRO Gift Shop 4, TRO Cafe 1, RTL Restaurant 3 (2025-01-20, 2025-09-04, 2026-04-18). Full lists are in the script output. Low-volume Bar days could be genuinely zero sales, and this sheet cannot tell a closed outlet from a missing feed. Summit week has no gaps. RTL 2026-04-18 should show "no data", not zero.
+**H10 missing venue-days. PARTIAL.** At venue level only RTL 2026-04-18 has no rows at all (every outlet missing). SSD and TRO have rows every business day from 2025-01-01 to 2026-10-04. Per outlet, gaps are mostly Bar days. RTL Bar 27 days, including 2026-10-02 in the reconciliation week, SSD Bar 2 days (2025-04-21, 2025-09-22), TRO Bar 67 days, TRO Restaurant 14, TRO Gift Shop 4, TRO Cafe 1, RTL Restaurant 3 (2025-01-20, 2025-09-04, 2026-04-18). Full lists are in the script output. Low-volume Bar days could be genuinely zero sales, and this sheet cannot tell a closed outlet from a missing feed. Summit week has no gaps. RTL 2026-04-18 should show "no data", not zero.
 
 **H11 other findings.**
-- Voids. 1,973 lines are voided, all with reason "Guest complaint". 87 voided lines also carry a discount. Voided lines are excluded from subtotal. In Summit week, including them would add $138.48 to F&B and $76.96 to merch.
+- Voids. 1,973 lines are voided, all with the same one reason. 87 voided lines also carry a discount. Voided lines are excluded from subtotal. In Summit week, including them would add $138.48 to F&B and $76.96 to merch.
 - Discounts reduce revenue (Summit-week F&B gross 9,265.36 vs net 9,230.42).
 - Voucher is a tender type, not a discount. Voucher orders are inside the subtotal and the matched targets, so vouchers count as revenue.
 - No negative prices, negative discounts or discounts above line gross.
@@ -326,21 +319,18 @@ The visual's Restaurant equals our Restaurant minus our Bar (5,784.28 - 1,251.02
 - "Ancillary Per Cap $8.08" equals 14,936.52 / 1,849 attendance = 8.08. Without subtracting Bar it would be 8.75.
 - "24.6% vs prior period" equals 14,936.52 / (13,766.83 - 1,783.60) - 1 = 24.6%, using prior week 2026-09-21 to 09-27 with Bar removed the same way. Without that it would be 17.6%.
 
-So the visual looks like it subtracts Bar twice, once by splitting it out and once more from Restaurant. Our reading is that the Restaurant measure is defined as F&B minus Cafe minus Bar, applied to a Restaurant total that never contained Bar. That is an inference from the arithmetic, not from the PBIX. The target F&B 9,230 is the correct sum (Restaurant + Bar + Cafe), and the visual understates F&B by $1,251.02. The other candidate explanation, Restaurant minus its own alcohol, gives 4,696.86, which displays as $4.7K and does not fit.
+See Power BI cross-checks above.
 
 Unexplained. "Avg Check $38.40" and "Ancillary Capture Rate 31.8%". We have 484 Summit-week orders. Net/orders is 33.45 and final_total/orders is 37.83. 484 / 1,849 = 26.2%. Neither matches, and the denominators those measures use are unknown.
 
 #### Open questions
 
-- Should Bar be reported under Restaurant or Cafe in the Overview's department split (Ticket, Restaurant, Cafe, Merchandise, Private Events) and the budget comparison?
-- Is RTL 2026-04-18 a closure or a missing feed? Are the Bar-only gaps closures?
-- Should the app reproduce the Ancillary visual's Bar double subtraction, or fix it and note the change?
+Bar and the gaps are settled by D-003, D-005 and D-007. The Ancillary
+visual question is open in PROGRESS.md.
 
 ### Profile: private events, labor, reference workbooks
 
-Every figure below is printed by `python3 scripts/profile/events_labor_ref.py`
-(run from the repo root). Workbooks were read with pandas 2.3.3 and openpyxl,
-read only. Free-text columns (`comments`, `lost_reason_name`) were profiled for
+Free-text columns (`comments`, `lost_reason_name`) were profiled for
 null counts and lengths only.
 
 #### 03_Private_Events.xlsx / private_events
@@ -379,7 +369,7 @@ README says actuals run through 2026-10-04 and department labels are raw on purp
 
 - Rows: 16,512. Dates 2025-01-01 to 2026-10-04. actual_out runs to 2026-10-05 06:00.
 - Keys: (venue_code, person_id, date, actual_in) has 16,511 distinct values. The one
-  duplicate pair is SSD E10303 on 2026-01-06, in at 11:00. One row is out 17:00, 6.0 h,
+  duplicate pair is one SSD employee on 2026-01-06, in at 11:00. One row is out 17:00, 6.0 h,
   rate 15.85, $95.10. The other is out 16:00, 4.5 h, rate 15.00, $67.50. They are not
   identical. (person_id, date) is not a key: 480 rows share a person-day.
 - Nulls: sched_in/sched_out 1,137 (all are the rows with a comment, 17 chars each,
@@ -441,7 +431,7 @@ page. Unmapped rows: 0. location_name variants map to the venue name for their
 venue_code (summit sky deck, SUMMIT SKY DECK, "Summit Sky Deck " -> Summit Sky Deck,
 and the same for the other two). venue_code and position need no mapping.
 
-Summit-week impact: none on totals. It only affects the department split. With this
+The mapping changes only the department split, not Summit-week totals. With this
 mapping the SSD department hours (184.0 / 77.4 / 92.7 / 54.7 / 39.2 / 36.4) round to
 the Power BI table (184 / 77 / 93 / 55 / 39 / 36). The $/hr values differ by 0.01 to
 0.03 (for example Kitchen 20.96 vs 20.94, Merch 19.42 vs 19.45). That gap is unexplained.
@@ -450,33 +440,31 @@ the Power BI table (184 / 77 / 93 / 55 / 39 / 36). The $/hr values differ by 0.0
 
 - Overnight: CONFIRMED that `date` is always the start date. There are 639 overnight
   shifts and date equals the actual_in date on all 16,512 rows. SSD has 3 overnight
-  shifts in the week (E10400 09-29, E10404 and E10401 10-03), none crossing a week
+  shifts in the week (one on 09-29, two on 10-03), none crossing a week
   boundary, so attribution does not move SSD hours. It does matter for TRO. Start-date
   attribution gives 321.17 h (target 321.2). End-date gives 313.70.
 - Hours columns: total_hrs = reg_hrs + ot_hrs on every row. Clock time
   (actual_out - actual_in) minus total_hrs is 0 on 4,508 rows and 0.5 h on 12,004
   rows. The 0.5 h is deducted when the clock span is over 6 h (10,867 rows) or the
   shift is unscheduled (1,137 rows, all 5.0 h clock and 4.5 h paid). This looks like
-  an unpaid meal break. The unscheduled case is a rule nobody documented, and it
-  should be confirmed with the owner.
+  an unpaid meal break. The deduction stands (D-006).
 - OT: reg_hrs never exceeds 8 (888 OT rows). ot_earnings = 1.5 x rate x ot_hrs (884
   rows, the rest rounding). reg_earnings = reg_hrs x rate on every rated row.
 - Missing rates: 132 rows (SSD 59, RTL 42, TRO 31) have rate and all three earnings
   columns null while hours are present (807.47 h). Every one of those people has a
   rate on other shifts, but rate varies on almost every shift (123 of 123 people have
-  more than one rate, for example E10100 has 123 distinct rates between 17.03 and
+  more than one rate, one person has 123 distinct rates between 17.03 and
   22.42). So a fill from the same person, the same position or the schedule (which has
-  no rate column) is an estimate, not a recovery. In the week: SSD 2 rows (E10202 Prep
-  Cook 10-02 5.48 h, E10108 Ticket Taker 10-03 7.50 h, 12.98 h), TRO 1 row (4.30 h),
+  no rate column) is an estimate, not a recovery. In the week: SSD 2 rows (a Prep
+  Cook on 10-02, 5.48 h, and a Ticket Taker on 10-03, 7.50 h, 12.98 h), TRO 1 row (4.30 h),
   RTL 0.
 - Tips: 4,412 rows, $87,964 total. SSD week tips $513.86. Excluding tips is needed to
   match.
-- Duplicates: no exact duplicates. There is 1 business-key duplicate (E10303
+- Duplicates: no exact duplicates. There is 1 business-key duplicate (SSD
   2026-01-06, above, outside the week). Also, 237 shifts overlap the same person's
   previous shift, 174 of them unscheduled "cover" rows. In the SSD week 2 overlapping
   shifts carry 11.0 h. Power BI evidently counts them, because the targets only match
-  with them included. They need a decision with the owner and should not be dropped
-  silently.
+  with them included. They count (D-006).
 
 #### H9 private events: CONFIRMED
 
@@ -511,61 +499,39 @@ expectation. Summit-week impact: none.
 
 | venue | rule | hours | payroll | PE |
 |---|---|---|---|---|
-| SSD | start date, sum total_hrs, sum total_earnings (null-rate rows add 0), no tips | 484.47 -> 484.5 ✓ | 9,346.69 -> 9,347 ✓ | 6,565.00 ✓ |
+| SSD | start date, sum total_hrs, sum total_earnings (null-rate rows add 0), no tips | 484.47 -> 484.5 match | 9,346.69 -> 9,347 match | 6,565.00 match |
 | SSD | end-date attribution | 484.47 | 9,346.69 | |
-| SSD | clock hours | 512.48 ✗ | | |
+| SSD | clock hours | 512.48 miss | | |
 | SSD | per-shift total_hrs rounded to 0.1 | 484.90 | | |
-| SSD | rated rows only | 471.49 ✗ | | |
-| SSD | scheduled rows only | 470.97 ✗ | | |
+| SSD | rated rows only | 471.49 miss | | |
+| SSD | scheduled rows only | 470.97 miss | | |
 | SSD | reg + 1.5 x ot recomputed | | 9,346.71 | |
-| SSD | plus tips | | 9,860.55 ✗ | |
-| SSD | fill missing rates with person median | | 9,613.65 ✗ | |
-| RTL | start date | 358.69 ✓ | 6,942.10 ✓ | 26,324.82 -> 26,325 ✓ |
-| TRO | start date | 321.17 ✓ | 6,257.93 ✓ | 17,564.55 -> 17,565 ✓ |
-| TRO | end date | 313.70 ✗ | | |
-| TRO | fill missing rate | | 6,341.44 ✗ | |
+| SSD | plus tips | | 9,860.55 miss | |
+| SSD | fill missing rates with person median | | 9,613.65 miss | |
+| RTL | start date | 358.69 match | 6,942.10 match | 26,324.82 -> 26,325 match |
+| TRO | start date | 321.17 match | 6,257.93 match | 17,564.55 -> 17,565 match |
+| TRO | end date | 313.70 miss | | |
+| TRO | fill missing rate | | 6,341.44 miss | |
 
 Private events for all venues: Definite, event-level grand_total on event_date. In
 this week every alternative (all statuses, Definite + Tentative, booking-level)
 gives the same number, so the week cannot tell the rules apart. Prior week SSD
 Definite is $22,256 (EV-000220 and EV-000221, one two-day booking at $11,128 per
 day). 6,565 / 22,256 = -70.5%, which matches the Power BI "▼70.5% vs prior period".
-That is consistent with event-level money: booking-level money would give 2 x 22,256.
+Booking-level money would give 2 x 22,256, so this fits event-level money.
 
 All 8 Power BI targets in this scope match for all 3 venues under one rule set. The
 targets include the 2 SSD missing-rate shifts at $0 payroll (12.98 h are counted in
 hours) and the 2 overlapping shifts (11.0 h).
 
-#### Cross-check (a) productivity 3.81
+#### Cross-checks
 
-1849 / 484.47 = 3.8165, which rounds to 3.82. A displayed 3.81 needs hours between
-484.67 and 485.94. Summing total_hrs after rounding each shift to 0.1 h gives 484.90,
-and 1849 / 484.90 = 3.8132 -> 3.81. The card's hours figure of "485" also only
-rounds to 485 if the measure is at least 484.5. Labor $/guest 9,346.69 / 1,849 =
-5.0550 -> $5.05 matches. Filling missing rates would give $5.20. So the
-productivity card likely uses per-shift rounded hours (484.9), and the target table
-and the hours KPI use unrounded 484.47. That is likely, not proven. No other
-candidate (end date, clock, scheduled, rated only) falls in the range.
-
-#### Cross-check (b) monthly chart stops at 2026-08
-
-The cause is not the data or the status. SSD has 6 Definite events in 2026-09
-($46,402) and 4 in 2026-10, with budget in both months. The chart's top gridline of
-$179.9K equals 1.15 x the 2026-06 Definite total ($156,456 -> $179,924), so the chart
-plots Definite event-date revenue. The window 2025-09 to 2026-08 is a fixed 12-month
-range ending one month before the last complete month (2026-09). That points to a
-relative-date filter anchored a month early or a hard-coded range in the report.
-The exact filter is unexplained without the PBIX.
+See Power BI cross-checks above.
 
 #### Open questions
 
 - "Event Count 4" on the SSD Private Events card: only 1 event of any status falls in
   the week. 4 equals the Definite SSD events in calendar October 2026 (EV-000222, 223,
   225, 226), but that may be a coincidence. Unexplained.
-- Should unscheduled "cover" shifts that overlap the same person's scheduled shift
-  count (237 overall, 2 in the SSD week, 11.0 h)? Power BI counts them.
-- Missing rates: should they show payroll as incomplete rather than $0? Power BI
-  silently uses $0 (SSD understated by about $267 at the person's median rate).
-- Is the 0.5 h deduction on 5 h unscheduled shifts intended?
 - booking_definite_date after 2026-10-05: is the CRM export later than "today"?
 
