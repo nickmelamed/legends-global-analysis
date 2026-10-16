@@ -124,8 +124,13 @@ class RecordingClient:
         return turn
 
     def save(self, question: str) -> Path | None:
-        """Write the turns of the last conversation, if there was one."""
-        if not self.key:
+        """Write the last conversation if the model finished it.
+
+        A call that failed part way leaves no file, so a replay never ends
+        early on a half-recorded answer.
+        """
+        finished = self.turns and self.turns[-1]["stop_reason"] != "tool_use"
+        if not self.key or not finished:
             return None
         self.directory.mkdir(parents=True, exist_ok=True)
         path = self.directory / f"{self.key}.json"

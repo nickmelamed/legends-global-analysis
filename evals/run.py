@@ -105,9 +105,9 @@ def grade(case: dict, status: int, body: dict) -> list[str]:
 def cost(body: dict) -> float | None:
     """Return the dollar cost of the model calls, if the model has a price."""
     price = PRICES.get(body.get("model", ""))
-    if price is None or not body.get("usage"):
+    u = body.get("usage") or {}
+    if price is None or not any(u.values()):
         return None
-    u = body["usage"]
     return (u["input_tokens"] * price[0] + u["output_tokens"] * price[1]) / 1e6
 
 
@@ -157,7 +157,7 @@ def report(outcomes: list[Outcome], record: bool) -> str:
         "# Ask the data evals",
         "",
         f"{passed} of {len(outcomes)} cases pass. "
-        + ("Live model calls, recorded." if record else "Replayed recordings."),
+        + ("Live model calls." if record else "Replayed recordings."),
         "",
         "| Case | User | Result | Status | Model | Grounded | Fallback | "
         "Tools | Tokens in/out | Cost |",
@@ -204,6 +204,16 @@ def main() -> int:
     record = parser.parse_args().record
     if record:
         load_env(Path(".env"))
+        if not (
+            os.environ.get("ANTHROPIC_API_KEY")
+            or os.environ.get("ANTHROPIC_AUTH_TOKEN")
+        ):
+            print(
+                "--record needs ANTHROPIC_API_KEY, in the environment or in .env "
+                "(copy .env.example). Nothing was run.",
+                file=sys.stderr,
+            )
+            return 2
     outcomes = run(record)
     REPORT.parent.mkdir(parents=True, exist_ok=True)
     REPORT.write_text(report(outcomes, record))

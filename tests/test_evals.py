@@ -1,7 +1,7 @@
 import pytest
 
 from api.ask import UNGROUNDED
-from evals.run import cost, grade
+from evals.run import cost, grade, main
 
 CASE = {
     "expect": {
@@ -88,3 +88,18 @@ def test_cost_uses_the_model_price():
     usage = {"input_tokens": 1_000_000, "output_tokens": 100_000}
     assert cost({"model": "claude-opus-5-5", "usage": usage}) == 6.0
     assert cost({"model": "recorded", "usage": usage}) is None
+
+
+def test_no_cost_when_the_model_never_answered():
+    usage = {"input_tokens": 0, "output_tokens": 0}
+    assert cost({"model": "claude-opus-5-5", "usage": usage}) is None
+
+
+def test_record_without_credentials_stops_before_any_case(monkeypatch, capsys):
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("ANTHROPIC_AUTH_TOKEN", raising=False)
+    monkeypatch.setattr("evals.run.load_env", lambda path: None)
+    monkeypatch.setattr("sys.argv", ["evals.run", "--record"])
+    monkeypatch.setattr("evals.run.run", lambda record: pytest.fail("ran cases"))
+    assert main() == 2
+    assert "ANTHROPIC_API_KEY" in capsys.readouterr().err

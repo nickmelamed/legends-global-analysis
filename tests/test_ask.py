@@ -11,7 +11,13 @@ import anthropic
 import pytest
 
 from api import ask_tools
-from api.llm import AnthropicClient, LLMError, RecordedClient, recording_key
+from api.llm import (
+    AnthropicClient,
+    LLMError,
+    RecordedClient,
+    RecordingClient,
+    recording_key,
+)
 
 FORBIDDEN_KEYS = {
     "customer_country",
@@ -262,3 +268,22 @@ def test_anthropic_client_without_credentials_falls_back(make_client, monkeypatc
     r = ask(make_client, llm)
     assert r.status_code == 200
     assert r.json()["fallback"]
+
+
+@pytest.mark.parametrize(
+    "turns",
+    [[], [tool_use()]],
+    ids=["no turns", "ends on a tool call"],
+)
+def test_an_unfinished_conversation_is_not_saved(tmp_path, turns):
+    recorder = RecordingClient(FakeClient(text("unused")), tmp_path)
+    recorder.key, recorder.turns = "k", turns
+    assert recorder.save("q") is None
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_a_finished_conversation_is_saved(tmp_path):
+    recorder = RecordingClient(FakeClient(text("unused")), tmp_path)
+    recorder.key, recorder.turns = "k", [tool_use(), text("Attendance was 70.")]
+    path = recorder.save("q")
+    assert json.loads(path.read_text())["turns"][1]["stop_reason"] == "end_turn"
