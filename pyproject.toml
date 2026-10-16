@@ -13,6 +13,8 @@ dependencies = [
     "python-calamine>=0.3",
     "fastapi>=0.115",
     "uvicorn[standard]>=0.30",
+    "anthropic>=0.105",
+    "pyyaml>=6",
 ]
 
 [project.optional-dependencies]
@@ -24,7 +26,7 @@ dev = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["pipeline*", "api*"]
+include = ["pipeline*", "api*", "evals*"]
 
 [tool.ruff]
 line-length = 88
